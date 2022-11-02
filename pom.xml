@@ -27,7 +27,6 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-
         <!--        Swagger UI dependency-->
         <dependency>
             <groupId>org.springdoc</groupId>
@@ -95,12 +94,14 @@
             <version>2.5.0</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
             <version>1.17.5</version>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <build>
