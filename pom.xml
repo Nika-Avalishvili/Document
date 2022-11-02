@@ -27,14 +27,15 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!--        Swagger UI dependency-->
+
+        <!--Swagger UI dependency-->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-ui</artifactId>
             <version>1.6.11</version>
         </dependency>
 
-        <!--        Spring Data JPA & PostgreSQL dependency-->
+        <!--Spring Data JPA & PostgreSQL dependency-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -50,19 +51,19 @@
             <version>42.2.15</version>
         </dependency>
 
-        <!--        Lombok library-->
+        <!--Lombok library-->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
 
-        <!--        Liquibase-->
+        <!--Liquibase-->
         <dependency>
             <groupId>org.liquibase</groupId>
             <artifactId>liquibase-core</artifactId>
         </dependency>
 
-        <!--        JUnit5 for unit testing-->
+        <!--JUnit5 for unit testing-->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
@@ -75,7 +76,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!--        Integration testing dependencies-->
+        <!--Integration testing dependencies-->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -94,13 +95,13 @@
             <version>2.5.0</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
             <version>1.17.5</version>
             <scope>test</scope>
         </dependency>
+
 
     </dependencies>
 
