@@ -65,7 +65,7 @@ class DocumentControllerTest {
 
         String requestJson = objectMapper.writeValueAsString(documentEntryDTOS);
 
-        String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.post("/document/upload")
+        String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.post("/document/insert")
                         .contentType(APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isOk())
