@@ -15,7 +15,7 @@ public class DocumentController {
 
     private final DocumentService documentService;
 
-    @PostMapping("/uploads")
+    @PostMapping("/upload")
     public List<DocumentEntryDTO> uploadExcelDocument(@RequestParam("file") MultipartFile file) throws Exception {
         return documentService.uploadExcelDocument(file);
     }
