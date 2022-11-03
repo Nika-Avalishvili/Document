@@ -49,7 +49,7 @@ class DocumentControllerTest {
     }
 
     @Test
-    void uploadDocument() throws Exception {
+    void insertDocumentEntries() throws Exception {
         DocumentEntryDTO documentEntryDTO = DocumentEntryDTO.builder()
                 .uploadDate(LocalDate.of(2022, 10, 13))
                 .effectiveDate(LocalDate.of(2022, 9, 30))
@@ -61,11 +61,11 @@ class DocumentControllerTest {
         List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
         documentEntryDTOS.add(documentEntryDTO);
 
-        documentService.uploadDocument(documentEntryDTOS);
+        documentService.insertDocumentEntries(documentEntryDTOS);
 
         String requestJson = objectMapper.writeValueAsString(documentEntryDTOS);
 
-        String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.post("/document/upload")
+        String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.post("/document/insert")
                         .contentType(APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isOk())
@@ -100,7 +100,7 @@ class DocumentControllerTest {
         List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
         documentEntryDTOS.add(documentEntryDTO1);
         documentEntryDTOS.add(documentEntryDTO2);
-        documentService.uploadDocument(documentEntryDTOS);
+        documentService.insertDocumentEntries(documentEntryDTOS);
 
         String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.get("/document/viewAll"))
                 .andExpect(status().isOk())
@@ -132,7 +132,7 @@ class DocumentControllerTest {
                 .build();
         List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
         documentEntryDTOS.add(documentEntryDTO);
-        Long id = documentService.uploadDocument(documentEntryDTOS).stream().findFirst().get().getId();
+        Long id = documentService.insertDocumentEntries(documentEntryDTOS).stream().findFirst().get().getId();
 
         String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.get("/document/viewById/{id}", id))
                 .andExpect(status().isOk())
@@ -166,7 +166,7 @@ class DocumentControllerTest {
 
         List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
         documentEntryDTOS.add(documentEntryDTO1);
-        documentService.uploadDocument(documentEntryDTOS);
+        documentService.insertDocumentEntries(documentEntryDTOS);
 
         String requestJson = objectMapper.writeValueAsString(documentEntryDTO2);
 
@@ -206,7 +206,7 @@ class DocumentControllerTest {
         documentEntryDTOS.add(documentEntryDTO1);
         documentEntryDTOS.add(documentEntryDTO2);
 
-        Long firstId = documentService.uploadDocument(documentEntryDTOS).stream().findFirst().get().getId();
+        Long firstId = documentService.insertDocumentEntries(documentEntryDTOS).stream().findFirst().get().getId();
 
         String firstResponseAsAString = mockMvc.perform(MockMvcRequestBuilders.delete("/document/deleteEntry?id={id}", firstId))
                 .andExpect(status().isOk())

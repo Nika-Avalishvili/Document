@@ -4,6 +4,7 @@ import com.example.document.model.DocumentEntryDTO;
 import com.example.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -15,8 +16,13 @@ public class DocumentController {
     private final DocumentService documentService;
 
     @PostMapping("/upload")
-    public List<DocumentEntryDTO> uploadDocument(@RequestBody List<DocumentEntryDTO> documentEntryDTOS) {
-        return documentService.uploadDocument(documentEntryDTOS);
+    public List<DocumentEntryDTO> uploadExcelDocument(@RequestParam("file") MultipartFile file) throws Exception {
+        return documentService.uploadExcelDocument(file);
+    }
+
+    @PostMapping("/insert")
+    public List<DocumentEntryDTO> InsertDocumentEntries(@RequestBody List<DocumentEntryDTO> documentEntryDTOS) {
+        return documentService.insertDocumentEntries(documentEntryDTOS);
     }
 
     @GetMapping("/viewAll")
