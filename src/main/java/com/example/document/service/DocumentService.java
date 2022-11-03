@@ -46,8 +46,8 @@ public class DocumentService {
                     .amount(amount)
                     .build();
             docEntryList.add(newDocumentEntry);
-            documentRepository.save(newDocumentEntry);
         }
+        documentRepository.saveAll(docEntryList);
         return documentEntryMapper.entityToDto(docEntryList);
     }
 
