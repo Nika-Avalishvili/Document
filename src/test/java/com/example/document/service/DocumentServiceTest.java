@@ -34,7 +34,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    void uploadDocument() {
+    void insertDocumentEntries() {
         List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
         DocumentEntryDTO documentEntryDTO1 = new DocumentEntryDTO(1L, LocalDate.of(2022, 10, 18), LocalDate.of(2022, 11, 15), 1L, 1L, 900);
         DocumentEntryDTO documentEntryDTO2 = new DocumentEntryDTO(2L, LocalDate.of(2022, 11, 26), LocalDate.of(2022, 12, 5), 1L, 1L, 900);
@@ -42,7 +42,7 @@ class DocumentServiceTest {
         documentEntryDTOS.add(documentEntryDTO2);
         Mockito.when(documentRepository.saveAll(any())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        List<DocumentEntryDTO> actualDocumentEntryDTOS = documentService.uploadDocument(documentEntryDTOS);
+        List<DocumentEntryDTO> actualDocumentEntryDTOS = documentService.insertDocumentEntries(documentEntryDTOS);
 
         Assertions.assertEquals(documentEntryDTOS.size(), actualDocumentEntryDTOS.size());
         Assertions.assertEquals(documentEntryDTOS.get(0), actualDocumentEntryDTOS.get(0));
