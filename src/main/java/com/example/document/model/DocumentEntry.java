@@ -3,6 +3,7 @@ package com.example.document.model;
 import lombok.*;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -21,5 +22,5 @@ public class DocumentEntry {
     private LocalDate effectiveDate;
     private Long employeeId;
     private Long benefitId;
-    private Integer amount;
+    private BigDecimal amount;
 }
