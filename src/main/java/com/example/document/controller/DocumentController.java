@@ -38,7 +38,7 @@ public class DocumentController {
     }
 
     @GetMapping("/viewMultipleByDates/{startDate}/{endDate}")
-    public List<DocumentEntryDTO> viewMultipleDocumentEntries(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate){
+    public List<DocumentEntryDTO> viewMultipleDocumentEntries(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         return documentService.viewMultipleDocumentEntries(startDate, endDate);
     }
 

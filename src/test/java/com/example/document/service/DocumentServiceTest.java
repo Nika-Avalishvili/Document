@@ -4,7 +4,6 @@ import com.example.document.model.DocumentEntry;
 import com.example.document.model.DocumentEntryDTO;
 import com.example.document.model.DocumentEntryMapper;
 import com.example.document.repository.DocumentRepository;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,9 +20,11 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.nio.file.Files.readAllBytes;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
@@ -42,6 +43,16 @@ class DocumentServiceTest {
         documentService = new DocumentService(documentEntryMapper, documentRepository);
     }
 
+    public DocumentEntryDTO createDocumentEntryDTO(int i) {
+        return DocumentEntryDTO.builder()
+                .uploadDate(LocalDate.of(2022, 10, 13))
+                .effectiveDate(LocalDate.of(2022 + i, 9, 30))
+                .employeeId(1L)
+                .benefitId(2L)
+                .amount(BigDecimal.valueOf(300))
+                .build();
+    }
+
     @Test
     void uploadExcelDocument() throws Exception {
         Path path = Paths.get("src/test/resources/test_files/input_file.xlsx");
@@ -55,17 +66,28 @@ class DocumentServiceTest {
 
         List<DocumentEntryDTO> actualDocumentEntryDTOS = documentService.uploadExcelDocument(file);
         Assertions.assertEquals(4, actualDocumentEntryDTOS.size());
-        Assertions.assertEquals(BigDecimal.valueOf(new XSSFWorkbook(file.getInputStream()).getSheetAt(0).getRow(1).getCell(4).getNumericCellValue()), actualDocumentEntryDTOS.get(0).getAmount());
-        Assertions.assertEquals(BigDecimal.valueOf(new XSSFWorkbook(file.getInputStream()).getSheetAt(0).getRow(2).getCell(4).getNumericCellValue()), actualDocumentEntryDTOS.get(1).getAmount());
+
+
+        //      Manually Created Info from Excel File
+        LocalDate docDate = LocalDate.of(2022, 11, 11);
+        LocalDate effectiveDate = LocalDate.of(2022, 12, 11);
+        List<DocumentEntryDTO> manuallyCreatedDocEntries =
+                List.of(
+                        new DocumentEntryDTO(1L, docDate, effectiveDate, 3L, 1L, BigDecimal.valueOf(897.82)),
+                        new DocumentEntryDTO(1L, docDate, effectiveDate, 12L, 2L, BigDecimal.valueOf(782.91)),
+                        new DocumentEntryDTO(1L, docDate, effectiveDate, 4L, 1L, BigDecimal.valueOf(100.78)),
+                        new DocumentEntryDTO(1L, docDate, effectiveDate, 5L, 2L, BigDecimal.valueOf(400.0))
+                );
+
+        assertThat(actualDocumentEntryDTOS)
+                .usingRecursiveComparison()
+                .ignoringFields("value.id", "id")
+                .isEqualTo(manuallyCreatedDocEntries);
     }
 
     @Test
     void insertDocumentEntries() {
-        List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        DocumentEntryDTO documentEntryDTO1 = new DocumentEntryDTO(1L, LocalDate.of(2022, 10, 18), LocalDate.of(2022, 11, 15), 1L, 1L, BigDecimal.valueOf(300));
-        DocumentEntryDTO documentEntryDTO2 = new DocumentEntryDTO(2L, LocalDate.of(2022, 11, 26), LocalDate.of(2022, 12, 5), 1L, 1L, BigDecimal.valueOf(300));
-        documentEntryDTOS.add(documentEntryDTO1);
-        documentEntryDTOS.add(documentEntryDTO2);
+        List<DocumentEntryDTO> documentEntryDTOS = List.of(createDocumentEntryDTO(1), createDocumentEntryDTO(2));
         Mockito.when(documentRepository.saveAll(any())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         List<DocumentEntryDTO> actualDocumentEntryDTOS = documentService.insertDocumentEntries(documentEntryDTOS);
@@ -77,39 +99,26 @@ class DocumentServiceTest {
 
     @Test
     void getAllDocuments() {
-        List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        DocumentEntryDTO documentEntryDTO1 = new DocumentEntryDTO(1L, LocalDate.of(2022, 10, 18), LocalDate.of(2022, 11, 15), 1L, 1L, BigDecimal.valueOf(300));
-        DocumentEntryDTO documentEntryDTO2 = new DocumentEntryDTO(2L, LocalDate.of(2022, 11, 26), LocalDate.of(2022, 12, 5), 1L, 1L, BigDecimal.valueOf(300));
-        documentEntryDTOS.add(documentEntryDTO1);
-        documentEntryDTOS.add(documentEntryDTO2);
-        Mockito.when(documentRepository.findAll()).thenReturn(List.of(documentEntryMapper.dtoToEntity(documentEntryDTO1), documentEntryMapper.dtoToEntity(documentEntryDTO2)));
+        List<DocumentEntryDTO> documentEntryDTOS = List.of(createDocumentEntryDTO(1), createDocumentEntryDTO(2));
+        Mockito.when(documentRepository.findAll()).thenReturn(documentEntryMapper.dtoToEntity(documentEntryDTOS));
 
         Assertions.assertEquals(2, documentService.getAllDocuments().size());
     }
 
     @Test
     void viewDocumentEntry() {
-        DocumentEntry documentEntry1 = new DocumentEntry(1L, LocalDate.of(2022, 10, 18), LocalDate.of(2022, 11, 15), 1L, 1L, BigDecimal.valueOf(300));
+        DocumentEntry documentEntry1 = new DocumentEntry(1L, LocalDate.of(2022, 10, 18), LocalDate.of(2022, 11, 15), 1L, 1L, BigDecimal.valueOf(600));
         DocumentEntry documentEntry2 = new DocumentEntry(2L, LocalDate.of(2022, 11, 26), LocalDate.of(2022, 12, 5), 1L, 1L, BigDecimal.valueOf(300));
 
         Mockito.when(documentRepository.findById(anyLong())).thenAnswer(invocationOnMock -> Stream.of(documentEntry1, documentEntry2).filter(e -> e.getId().equals(invocationOnMock.getArgument(0))).findFirst());
 
-        Assertions.assertEquals(BigDecimal.valueOf(300), documentService.viewDocumentEntry(1L).getAmount());
+        Assertions.assertEquals(BigDecimal.valueOf(600), documentService.viewDocumentEntry(1L).getAmount());
     }
 
     @Test
     void viewMultipleDocumentEntries() {
         List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        for (long i = 0; i < 5; i++) {
-            DocumentEntryDTO documentEntryDTO = DocumentEntryDTO.builder()
-                    .uploadDate(LocalDate.of(2022, 10, 13))
-                    .effectiveDate(LocalDate.of(2022 + (int) i, 9, 30))
-                    .employeeId(1L)
-                    .benefitId(2L)
-                    .amount(BigDecimal.valueOf(300 * i))
-                    .build();
-            documentEntryDTOS.add(documentEntryDTO);
-        }
+        IntStream.range(0, 5).forEach(i -> documentEntryDTOS.add(createDocumentEntryDTO(i)));
 
         LocalDate startDate = LocalDate.of(2022, 1, 1);
         LocalDate endDate = LocalDate.of(2024, 12, 31);
@@ -123,28 +132,20 @@ class DocumentServiceTest {
 
     @Test
     void editDocumentEntry() {
-        DocumentEntryDTO documentEntryDTO = new DocumentEntryDTO(1L, LocalDate.of(2022, 10, 18), LocalDate.of(2022, 11, 15), 1L, 1L, BigDecimal.valueOf(300));
         Mockito.when(documentRepository.save(any())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        DocumentEntryDTO actualDTO = documentService.editDocumentEntry(createDocumentEntryDTO(1));
 
-        DocumentEntryDTO actualDTO = documentService.editDocumentEntry(documentEntryDTO);
-
-        Assertions.assertEquals(documentEntryDTO, actualDTO);
+        Assertions.assertEquals(createDocumentEntryDTO(1), actualDTO);
     }
 
     @Test
     void deleteDocumentEntry() {
-        DocumentEntryDTO documentEntryDTO = new DocumentEntryDTO(1L, LocalDate.of(2022, 10, 18), LocalDate.of(2022, 11, 15), 1L, 1L, BigDecimal.valueOf(300));
         documentService.deleteDocumentEntry(1L);
         Mockito.verify(documentRepository, times(1)).deleteById(1L);
     }
 
     @Test
     void deleteMultipleDocumentEntry() {
-        DocumentEntryDTO documentEntryDTO1 = new DocumentEntryDTO(1L, LocalDate.of(2022, 10, 18), LocalDate.of(2022, 11, 15), 1L, 1L, BigDecimal.valueOf(400));
-        DocumentEntryDTO documentEntryDTO2 = new DocumentEntryDTO(2L, LocalDate.of(2022, 10, 18), LocalDate.of(2022, 11, 15), 1L, 1L, BigDecimal.valueOf(509));
-        DocumentEntryDTO documentEntryDTO3 = new DocumentEntryDTO(3L, LocalDate.of(2022, 10, 18), LocalDate.of(2022, 11, 15), 1L, 1L, BigDecimal.valueOf(893));
-        DocumentEntryDTO documentEntryDTO4 = new DocumentEntryDTO(4L, LocalDate.of(2022, 10, 18), LocalDate.of(2022, 11, 15), 1L, 1L, BigDecimal.valueOf(233));
-        DocumentEntryDTO documentEntryDTO5 = new DocumentEntryDTO(5L, LocalDate.of(2022, 10, 18), LocalDate.of(2022, 11, 15), 1L, 1L, BigDecimal.valueOf(123));
         documentService.deleteMultipleDocumentEntry(List.of(1L, 3L, 5L));
         Mockito.verify(documentRepository, times(1)).deleteAllByIdInBatch(List.of(1L, 3L, 5L));
     }

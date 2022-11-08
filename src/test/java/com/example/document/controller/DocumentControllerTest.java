@@ -24,6 +24,8 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.nio.file.Files.readAllBytes;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,6 +57,16 @@ class DocumentControllerTest {
         documentRepository.deleteAll();
     }
 
+    public DocumentEntryDTO createDocumentEntryDTO(int i) {
+        return DocumentEntryDTO.builder()
+                .uploadDate(LocalDate.of(2022, 10, 13))
+                .effectiveDate(LocalDate.of(2022 + i, 9, 30))
+                .employeeId(1L)
+                .benefitId(2L)
+                .amount(BigDecimal.valueOf(300))
+                .build();
+    }
+
     @Test
     void uploadExcelDocument() throws Exception {
         Path path = Paths.get("src/test/resources/test_files/input_file.xlsx");
@@ -66,8 +78,6 @@ class DocumentControllerTest {
                 contentType,
                 readAllBytes(path));
 
-        List<DocumentEntryDTO> docEntryList = documentService.uploadExcelDocument(file);
-
         String responseAsAString = mockMvc.perform(multipart("/document/upload")
                         .file("file", file.getBytes()))
                 .andExpect(status().isOk())
@@ -76,27 +86,29 @@ class DocumentControllerTest {
         List<DocumentEntryDTO> actualDocumentEntryDTOS = objectMapper.readValue(responseAsAString, new TypeReference<>() {
         });
 
-        assertThat(actualDocumentEntryDTOS.stream().findFirst())
-                .usingRecursiveComparison()
-                .ignoringFields("value.id")
-                .isEqualTo(docEntryList.stream().findFirst());
+//      Manually Created Info from Excel File
+        LocalDate docDate = LocalDate.of(2022, 11, 11);
+        LocalDate effectiveDate = LocalDate.of(2022, 12, 11);
+        List<DocumentEntryDTO> manuallyCreatedDocEntries =
+                List.of(
+                        new DocumentEntryDTO(1L, docDate, effectiveDate, 3L, 1L, BigDecimal.valueOf(897.82)),
+                        new DocumentEntryDTO(1L, docDate, effectiveDate, 12L, 2L, BigDecimal.valueOf(782.91)),
+                        new DocumentEntryDTO(1L, docDate, effectiveDate, 4L, 1L, BigDecimal.valueOf(100.78)),
+                        new DocumentEntryDTO(1L, docDate, effectiveDate, 5L, 2L, BigDecimal.valueOf(400.0))
+                );
 
-        Assertions.assertEquals(4, docEntryList.size());
+
+        assertThat(actualDocumentEntryDTOS)
+                .usingRecursiveComparison()
+                .ignoringFields("value.id", "id")
+                .isEqualTo(manuallyCreatedDocEntries);
+
+        Assertions.assertEquals(4, actualDocumentEntryDTOS.size());
     }
 
     @Test
     void insertDocumentEntries() throws Exception {
-        DocumentEntryDTO documentEntryDTO = DocumentEntryDTO.builder()
-                .uploadDate(LocalDate.of(2022, 10, 13))
-                .effectiveDate(LocalDate.of(2022, 9, 30))
-                .employeeId(1L)
-                .benefitId(2L)
-                .amount(BigDecimal.valueOf(300))
-                .build();
-
-        List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        documentEntryDTOS.add(documentEntryDTO);
-
+        List<DocumentEntryDTO> documentEntryDTOS = List.of(createDocumentEntryDTO(1));
         documentService.insertDocumentEntries(documentEntryDTOS);
 
         String requestJson = objectMapper.writeValueAsString(documentEntryDTOS);
@@ -118,24 +130,7 @@ class DocumentControllerTest {
 
     @Test
     void viewAllDocuments() throws Exception {
-        DocumentEntryDTO documentEntryDTO1 = DocumentEntryDTO.builder()
-                .uploadDate(LocalDate.of(2022, 10, 13))
-                .effectiveDate(LocalDate.of(2022, 9, 30))
-                .employeeId(1L)
-                .benefitId(2L)
-                .amount(BigDecimal.valueOf(300))
-                .build();
-        DocumentEntryDTO documentEntryDTO2 = DocumentEntryDTO.builder()
-                .uploadDate(LocalDate.of(2022, 10, 13))
-                .effectiveDate(LocalDate.of(2022, 9, 30))
-                .employeeId(2L)
-                .benefitId(2L)
-                .amount(BigDecimal.valueOf(300))
-                .build();
-
-        List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        documentEntryDTOS.add(documentEntryDTO1);
-        documentEntryDTOS.add(documentEntryDTO2);
+        List<DocumentEntryDTO> documentEntryDTOS = List.of(createDocumentEntryDTO(1), createDocumentEntryDTO(2));
         documentService.insertDocumentEntries(documentEntryDTOS);
 
         String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.get("/document/viewAll"))
@@ -159,15 +154,7 @@ class DocumentControllerTest {
 
     @Test
     void viewDocumentEntry() throws Exception {
-        DocumentEntryDTO documentEntryDTO = DocumentEntryDTO.builder()
-                .uploadDate(LocalDate.of(2022, 10, 13))
-                .effectiveDate(LocalDate.of(2022, 9, 30))
-                .employeeId(1L)
-                .benefitId(2L)
-                .amount(BigDecimal.valueOf(300))
-                .build();
-        List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        documentEntryDTOS.add(documentEntryDTO);
+        List<DocumentEntryDTO> documentEntryDTOS = List.of(createDocumentEntryDTO(1));
         Long id = documentService.insertDocumentEntries(documentEntryDTOS).stream().findFirst().get().getId();
 
         String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.get("/document/viewById/{id}", id))
@@ -180,22 +167,14 @@ class DocumentControllerTest {
         assertThat(actualDocumentEntryDTO)
                 .usingRecursiveComparison()
                 .ignoringFields("id")
-                .isEqualTo(documentEntryDTO);
+                .isEqualTo(documentEntryDTOS.get(0));
     }
+
 
     @Test
     void viewMultipleDocumentEntries() throws Exception {
         List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        for (long i = 0; i < 5; i++) {
-            DocumentEntryDTO documentEntryDTO = DocumentEntryDTO.builder()
-                    .uploadDate(LocalDate.of(2022, 10, 13))
-                    .effectiveDate(LocalDate.of(2022 + (int) i, 9, 30))
-                    .employeeId(1L)
-                    .benefitId(2L)
-                    .amount(BigDecimal.valueOf(300))
-                    .build();
-            documentEntryDTOS.add(documentEntryDTO);
-        }
+        IntStream.range(0, 5).forEach(i -> documentEntryDTOS.add(createDocumentEntryDTO(i)));
 
         documentService.insertDocumentEntries(documentEntryDTOS);
 
@@ -222,26 +201,12 @@ class DocumentControllerTest {
 
     @Test
     void editDocumentEntry() throws Exception {
-        DocumentEntryDTO documentEntryDTO1 = DocumentEntryDTO.builder()
-                .uploadDate(LocalDate.of(2022, 10, 13))
-                .effectiveDate(LocalDate.of(2022, 9, 30))
-                .employeeId(1L)
-                .benefitId(2L)
-                .amount(BigDecimal.valueOf(300))
-                .build();
-        DocumentEntryDTO documentEntryDTO2 = DocumentEntryDTO.builder()
-                .uploadDate(LocalDate.of(2022, 10, 13))
-                .effectiveDate(LocalDate.of(2022, 9, 30))
-                .employeeId(2L)
-                .benefitId(2L)
-                .amount(BigDecimal.valueOf(300))
-                .build();
-
         List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        documentEntryDTOS.add(documentEntryDTO1);
+        IntStream.range(0, 2).forEach(i -> documentEntryDTOS.add(createDocumentEntryDTO(i)));
+
         documentService.insertDocumentEntries(documentEntryDTOS);
 
-        String requestJson = objectMapper.writeValueAsString(documentEntryDTO2);
+        String requestJson = objectMapper.writeValueAsString(documentEntryDTOS.get(1));
 
         String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.put("/document/updateEntry")
                         .contentType(APPLICATION_JSON)
@@ -252,7 +217,7 @@ class DocumentControllerTest {
         DocumentEntryDTO actualDocumentEntryDTO = objectMapper.readValue(responseAsAString, new TypeReference<>() {
         });
 
-        assertThat(documentEntryDTO2)
+        assertThat(documentEntryDTOS.get(1))
                 .usingRecursiveComparison()
                 .ignoringFields("id")
                 .isEqualTo(actualDocumentEntryDTO);
@@ -260,28 +225,12 @@ class DocumentControllerTest {
 
     @Test
     void deleteEditDocumentEntry() throws Exception {
-        DocumentEntryDTO documentEntryDTO1 = DocumentEntryDTO.builder()
-                .uploadDate(LocalDate.of(2022, 10, 13))
-                .effectiveDate(LocalDate.of(2022, 9, 30))
-                .employeeId(1L)
-                .benefitId(2L)
-                .amount(BigDecimal.valueOf(300))
-                .build();
-        DocumentEntryDTO documentEntryDTO2 = DocumentEntryDTO.builder()
-                .uploadDate(LocalDate.of(2022, 10, 13))
-                .effectiveDate(LocalDate.of(2022, 9, 30))
-                .employeeId(2L)
-                .benefitId(2L)
-                .amount(BigDecimal.valueOf(300))
-                .build();
-
         List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        documentEntryDTOS.add(documentEntryDTO1);
-        documentEntryDTOS.add(documentEntryDTO2);
+        IntStream.range(0, 2).forEach(i -> documentEntryDTOS.add(createDocumentEntryDTO(i)));
 
         Long firstId = documentService.insertDocumentEntries(documentEntryDTOS).stream().findFirst().get().getId();
 
-        String firstResponseAsAString = mockMvc.perform(MockMvcRequestBuilders.delete("/document/deleteEntry?id={id}", firstId))
+        mockMvc.perform(MockMvcRequestBuilders.delete("/document/deleteEntry?id={id}", firstId))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -295,51 +244,27 @@ class DocumentControllerTest {
         assertThat(actualDocumentEntryDTOList)
                 .hasSize(1)
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields("id")
-                .doesNotContain(documentEntryDTO1);
+                .doesNotContain(documentEntryDTOS.get(0));
 
         DocumentEntryDTO actualDocumentEntryDTO = actualDocumentEntryDTOList.stream().findFirst().orElseThrow();
 
-        assertThat(actualDocumentEntryDTO).usingRecursiveComparison().ignoringFields("id").isEqualTo(documentEntryDTO2);
+        assertThat(actualDocumentEntryDTO).usingRecursiveComparison().ignoringFields("id").isEqualTo(documentEntryDTOS.get(1));
     }
-
 
     @Test
     void deleteMultipleDocumentEntries() throws Exception {
-        DocumentEntryDTO documentEntryDTO1 = DocumentEntryDTO.builder()
-                .uploadDate(LocalDate.of(2022, 10, 13))
-                .effectiveDate(LocalDate.of(2022, 9, 30))
-                .employeeId(1L)
-                .benefitId(2L)
-                .amount(BigDecimal.valueOf(300))
-                .build();
-        DocumentEntryDTO documentEntryDTO2 = DocumentEntryDTO.builder()
-                .uploadDate(LocalDate.of(2022, 10, 13))
-                .effectiveDate(LocalDate.of(2022, 9, 30))
-                .employeeId(2L)
-                .benefitId(2L)
-                .amount(BigDecimal.valueOf(400))
-                .build();
-        DocumentEntryDTO documentEntryDTO3 = DocumentEntryDTO.builder()
-                .uploadDate(LocalDate.of(2022, 10, 13))
-                .effectiveDate(LocalDate.of(2022, 9, 30))
-                .employeeId(2L)
-                .benefitId(2L)
-                .amount(BigDecimal.valueOf(500))
-                .build();
-
         List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        documentEntryDTOS.add(documentEntryDTO1);
-        documentEntryDTOS.add(documentEntryDTO2);
-        documentEntryDTOS.add(documentEntryDTO3);
+        IntStream.range(0, 5).forEach(i -> documentEntryDTOS.add(createDocumentEntryDTO(i)));
 
-        Long firstId = documentService.insertDocumentEntries(documentEntryDTOS).stream().findFirst().get().getId();
-        Long secondId = firstId + 1L;
+        documentService.insertDocumentEntries(documentEntryDTOS);
 
-        String idFirst = "" + firstId;
-        String idSecond = "" + secondId;
+        List<String> ids = documentService.getAllDocuments().stream()
+                .map(x -> String.valueOf(x.getId()))
+                .limit(2)
+                .collect(Collectors.toList());
 
-        String firstResponseAsAString = mockMvc.perform(MockMvcRequestBuilders.delete("/document/deleteMultipleEntries")
-                        .param("ids", idFirst, idSecond))
+        mockMvc.perform(MockMvcRequestBuilders.delete("/document/deleteMultipleEntries")
+                        .param("ids", ids.toArray(new String[0])))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -351,12 +276,12 @@ class DocumentControllerTest {
         });
 
         assertThat(actualDocumentEntryDTOList)
-                .hasSize(1)
-                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("id")
-                .doesNotContain(documentEntryDTO1);
-
-        DocumentEntryDTO actualDocumentEntryDTO = actualDocumentEntryDTOList.stream().findFirst().orElseThrow();
-
-        assertThat(actualDocumentEntryDTO).usingRecursiveComparison().ignoringFields("id").isEqualTo(documentEntryDTO3);
+                .hasSize(3)
+                .doesNotContain(documentEntryDTOS.get(0), documentEntryDTOS.get(1))
+                .contains(documentService.getAllDocuments().get(0),
+                        documentService.getAllDocuments().get(1),
+                        documentService.getAllDocuments().get(2))
+                .usingRecursiveComparison()
+                .ignoringFields("id");
     }
 }
