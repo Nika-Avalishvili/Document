@@ -17,7 +17,6 @@ import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -110,15 +109,14 @@ class DocumentServiceTest {
         DocumentEntry documentEntry1 = new DocumentEntry(1L, LocalDate.of(2022, 10, 18), LocalDate.of(2022, 11, 15), 1L, 1L, BigDecimal.valueOf(600));
         DocumentEntry documentEntry2 = new DocumentEntry(2L, LocalDate.of(2022, 11, 26), LocalDate.of(2022, 12, 5), 1L, 1L, BigDecimal.valueOf(300));
 
-        Mockito.when(documentRepository.findById(anyLong())).thenAnswer(invocationOnMock -> Stream.of(documentEntry1, documentEntry2).filter(e -> e.getId().equals(invocationOnMock.getArgument(0))).findFirst());
+        Mockito.when(documentRepository.findById(anyLong())).thenAnswer(invocationOnMock -> Stream.of(documentEntry1, documentEntry2).filter(documentEntry -> documentEntry.getId().equals(invocationOnMock.getArgument(0))).findFirst());
 
         Assertions.assertEquals(BigDecimal.valueOf(600), documentService.viewDocumentEntry(1L).getAmount());
     }
 
     @Test
     void viewMultipleDocumentEntries() {
-        List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        IntStream.range(0, 5).forEach(i -> documentEntryDTOS.add(createDocumentEntryDTO(i)));
+        List<DocumentEntryDTO> documentEntryDTOS = IntStream.range(0, 5).mapToObj(this::createDocumentEntryDTO).collect(Collectors.toList());
 
         LocalDate startDate = LocalDate.of(2022, 1, 1);
         LocalDate endDate = LocalDate.of(2024, 12, 31);

@@ -22,7 +22,6 @@ import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -173,8 +172,7 @@ class DocumentControllerTest {
 
     @Test
     void viewMultipleDocumentEntries() throws Exception {
-        List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        IntStream.range(0, 5).forEach(i -> documentEntryDTOS.add(createDocumentEntryDTO(i)));
+        List<DocumentEntryDTO> documentEntryDTOS = IntStream.range(0, 5).mapToObj(this::createDocumentEntryDTO).collect(Collectors.toList());
 
         documentService.insertDocumentEntries(documentEntryDTOS);
 
@@ -201,9 +199,7 @@ class DocumentControllerTest {
 
     @Test
     void editDocumentEntry() throws Exception {
-        List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        IntStream.range(0, 2).forEach(i -> documentEntryDTOS.add(createDocumentEntryDTO(i)));
-
+        List<DocumentEntryDTO> documentEntryDTOS = IntStream.range(0, 2).mapToObj(this::createDocumentEntryDTO).collect(Collectors.toList());
         documentService.insertDocumentEntries(documentEntryDTOS);
 
         String requestJson = objectMapper.writeValueAsString(documentEntryDTOS.get(1));
@@ -225,8 +221,7 @@ class DocumentControllerTest {
 
     @Test
     void deleteEditDocumentEntry() throws Exception {
-        List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        IntStream.range(0, 2).forEach(i -> documentEntryDTOS.add(createDocumentEntryDTO(i)));
+        List<DocumentEntryDTO> documentEntryDTOS = IntStream.range(0, 2).mapToObj(this::createDocumentEntryDTO).collect(Collectors.toList());
 
         Long firstId = documentService.insertDocumentEntries(documentEntryDTOS).stream().findFirst().get().getId();
 
@@ -253,13 +248,11 @@ class DocumentControllerTest {
 
     @Test
     void deleteMultipleDocumentEntries() throws Exception {
-        List<DocumentEntryDTO> documentEntryDTOS = new ArrayList<>();
-        IntStream.range(0, 5).forEach(i -> documentEntryDTOS.add(createDocumentEntryDTO(i)));
-
+        List<DocumentEntryDTO> documentEntryDTOS = IntStream.range(0, 5).mapToObj(this::createDocumentEntryDTO).collect(Collectors.toList());
         documentService.insertDocumentEntries(documentEntryDTOS);
 
         List<String> ids = documentService.getAllDocuments().stream()
-                .map(x -> String.valueOf(x.getId()))
+                .map(documentEntryDTO -> String.valueOf(documentEntryDTO.getId()))
                 .limit(2)
                 .collect(Collectors.toList());
 
