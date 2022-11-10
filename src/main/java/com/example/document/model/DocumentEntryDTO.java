@@ -14,11 +14,13 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class DocumentEntryDTO {
     private Long id;
-    private LocalDate uploadDate;
 
+    private LocalDate uploadDate;
     private LocalDate effectiveDate;
+
     private Long employeeId;
     private Long benefitId;
+
     private BigDecimal amount;
 }
 

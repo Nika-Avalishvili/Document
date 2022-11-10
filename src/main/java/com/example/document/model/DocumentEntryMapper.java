@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 @Component
 public class DocumentEntryMapper {
+
     public DocumentEntryDTO entityToDto(DocumentEntry document) {
         return DocumentEntryDTO.builder()
                 .id(document.getId())
