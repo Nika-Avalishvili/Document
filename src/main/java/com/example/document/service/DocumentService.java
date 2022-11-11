@@ -76,11 +76,8 @@ public class DocumentService {
     public List<DocumentWithEmployeeDTO> getAllDocuments() {
         List<DocumentEntryDTO> allDocumentEntryDTOs = documentEntryMapper.entityToDto(documentRepository.findAll());
 
-        List<EmployeeDTO> allEmployeeDTOs = IntStream.range(0, allDocumentEntryDTOs.size())
-                .mapToObj(i -> employeeClient.getEmployeeById(allDocumentEntryDTOs.get(i).getEmployeeId()))
-                .collect(Collectors.toList());
-        return IntStream.range(0, allDocumentEntryDTOs.size())
-                .mapToObj(i -> DocumentWithEmployeeDTO.of(allDocumentEntryDTOs.get(i), allEmployeeDTOs.get(i))).collect(Collectors.toList());
+        return allDocumentEntryDTOs.stream()
+                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO,employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId()))).collect(Collectors.toList());
     }
 
     public DocumentWithEmployeeDTO viewDocumentEntry(Long id) {
