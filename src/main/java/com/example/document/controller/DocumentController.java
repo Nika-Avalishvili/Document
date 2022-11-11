@@ -1,6 +1,7 @@
 package com.example.document.controller;
 
 import com.example.document.model.DocumentEntryDTO;
+import com.example.document.model.DocumentWithEmployeeDTO;
 import com.example.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -33,7 +34,7 @@ public class DocumentController {
     }
 
     @GetMapping("/viewById/{id}")
-    public DocumentEntryDTO viewDocumentEntry(@PathVariable Long id) {
+    public DocumentWithEmployeeDTO viewDocumentEntry(@PathVariable Long id) {
         return documentService.viewDocumentEntry(id);
     }
 

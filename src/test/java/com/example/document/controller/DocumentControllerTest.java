@@ -1,6 +1,9 @@
 package com.example.document.controller;
 
+import com.example.document.client.EmployeeClient;
+import com.example.document.client.EmployeeDTO;
 import com.example.document.model.DocumentEntryDTO;
+import com.example.document.model.DocumentWithEmployeeDTO;
 import com.example.document.repository.DocumentRepository;
 import com.example.document.service.DocumentService;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -9,9 +12,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -28,6 +33,7 @@ import java.util.stream.IntStream;
 
 import static java.nio.file.Files.readAllBytes;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -37,6 +43,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class DocumentControllerTest {
+
+    @MockBean
+    private EmployeeClient employeeClient;
 
     @Autowired
     private MockMvc mockMvc;
@@ -123,7 +132,7 @@ class DocumentControllerTest {
 
         assertThat(actualDocumentEntryDTOS.stream().findFirst())
                 .usingRecursiveComparison()
-                .ignoringFields("value.id")
+                .ignoringFields("value.id", "value.employeeId")
                 .isEqualTo(documentEntryDTOS.stream().findFirst());
     }
 
@@ -147,26 +156,40 @@ class DocumentControllerTest {
 
         assertThat(expectedDocumentEntryDTO)
                 .usingRecursiveComparison()
-                .ignoringFields("id")
+                .ignoringFields("id", "employeeId")
                 .isEqualTo(actualDocumentEntryDTO);
     }
 
     @Test
     void viewDocumentEntry() throws Exception {
-        List<DocumentEntryDTO> documentEntryDTOS = List.of(createDocumentEntryDTO(1));
-        Long id = documentService.insertDocumentEntries(documentEntryDTOS).stream().findFirst().get().getId();
+        DocumentEntryDTO documentEntryDTO = createDocumentEntryDTO(1);
+        EmployeeDTO employeeDTO = EmployeeDTO.builder()
+                .employeeId(1L)
+                .firstName("Nika")
+                .lastName("Avalishvili")
+                .department("Business Development")
+                .positions("Business Builder")
+                .email("na@gmail.com")
+                .isActive(true)
+                .isPensionsPayer(true)
+                .build();
+
+        Long id = documentService.insertDocumentEntries(List.of(documentEntryDTO)).stream().findFirst().get().getId();
+
+        Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
         String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.get("/document/viewById/{id}", id))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        DocumentEntryDTO actualDocumentEntryDTO = objectMapper.readValue(responseAsAString, new TypeReference<>() {
+        DocumentWithEmployeeDTO expectedDocumentWithEmployeeDTO = DocumentWithEmployeeDTO.of(documentEntryDTO, employeeDTO);
+        DocumentWithEmployeeDTO actualDocumentWithEmployeeDTO = objectMapper.readValue(responseAsAString, new TypeReference<>() {
         });
 
-        assertThat(actualDocumentEntryDTO)
+        assertThat(actualDocumentWithEmployeeDTO)
                 .usingRecursiveComparison()
                 .ignoringFields("id")
-                .isEqualTo(documentEntryDTOS.get(0));
+                .isEqualTo(expectedDocumentWithEmployeeDTO);
     }
 
 
@@ -215,7 +238,7 @@ class DocumentControllerTest {
 
         assertThat(documentEntryDTOS.get(1))
                 .usingRecursiveComparison()
-                .ignoringFields("id")
+                .ignoringFields("id", "employeeId")
                 .isEqualTo(actualDocumentEntryDTO);
     }
 
@@ -238,12 +261,12 @@ class DocumentControllerTest {
 
         assertThat(actualDocumentEntryDTOList)
                 .hasSize(1)
-                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("id")
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("id", "employeeId")
                 .doesNotContain(documentEntryDTOS.get(0));
 
         DocumentEntryDTO actualDocumentEntryDTO = actualDocumentEntryDTOList.stream().findFirst().orElseThrow();
 
-        assertThat(actualDocumentEntryDTO).usingRecursiveComparison().ignoringFields("id").isEqualTo(documentEntryDTOS.get(1));
+        assertThat(actualDocumentEntryDTO).usingRecursiveComparison().ignoringFields("id", "employeeId").isEqualTo(documentEntryDTOS.get(1));
     }
 
     @Test
@@ -275,6 +298,6 @@ class DocumentControllerTest {
                         documentService.getAllDocuments().get(1),
                         documentService.getAllDocuments().get(2))
                 .usingRecursiveComparison()
-                .ignoringFields("id");
+                .ignoringFields("id", "employeeId");
     }
 }

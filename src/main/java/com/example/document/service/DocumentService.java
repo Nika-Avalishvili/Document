@@ -1,8 +1,11 @@
 package com.example.document.service;
 
+import com.example.document.client.EmployeeClient;
+import com.example.document.client.EmployeeDTO;
 import com.example.document.model.DocumentEntry;
 import com.example.document.model.DocumentEntryDTO;
 import com.example.document.model.DocumentEntryMapper;
+import com.example.document.model.DocumentWithEmployeeDTO;
 import com.example.document.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Row;
@@ -21,8 +24,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DocumentService {
 
-    public final DocumentEntryMapper documentEntryMapper;
-    public final DocumentRepository documentRepository;
+    private final DocumentEntryMapper documentEntryMapper;
+    private final DocumentRepository documentRepository;
+    private final EmployeeClient employeeClient;
 
     public List<DocumentEntryDTO> uploadExcelDocument(MultipartFile file) throws Exception {
         InputStream inputStream = file.getInputStream();
@@ -52,7 +56,6 @@ public class DocumentService {
         return documentEntryMapper.entityToDto(docEntryList);
     }
 
-
     public List<DocumentEntryDTO> insertDocumentEntries(List<DocumentEntryDTO> documentEntryDTOS) {
         List<DocumentEntry> documentEntries = documentEntryMapper.dtoToEntity(documentEntryDTOS);
         documentRepository.saveAll(documentEntries);
@@ -64,9 +67,12 @@ public class DocumentService {
         return documentEntryMapper.entityToDto(allDocumentEntries);
     }
 
-    public DocumentEntryDTO viewDocumentEntry(Long id) {
+    public DocumentWithEmployeeDTO viewDocumentEntry(Long id) {
         DocumentEntry documentEntry = documentRepository.findById(id).orElse(null);
-        return documentEntryMapper.entityToDto(documentEntry);
+        DocumentEntryDTO documentEntryDTO = documentEntryMapper.entityToDto(documentEntry);
+        EmployeeDTO employeeById = employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId());
+        employeeById.setEmployeeId(documentEntry.getEmployeeId());
+        return DocumentWithEmployeeDTO.of(documentEntryDTO, employeeById);
     }
 
     public List<DocumentEntryDTO> viewMultipleDocumentEntries(LocalDate startDate, LocalDate endDate) {

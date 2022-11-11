@@ -1,8 +1,11 @@
 package com.example.document.service;
 
+import com.example.document.client.EmployeeClient;
+import com.example.document.client.EmployeeDTO;
 import com.example.document.model.DocumentEntry;
 import com.example.document.model.DocumentEntryDTO;
 import com.example.document.model.DocumentEntryMapper;
+import com.example.document.model.DocumentWithEmployeeDTO;
 import com.example.document.repository.DocumentRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,9 +21,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static java.nio.file.Files.readAllBytes;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,13 +36,15 @@ class DocumentServiceTest {
 
     @Mock
     DocumentRepository documentRepository;
+    @Mock
+    EmployeeClient employeeClient;
     DocumentEntryMapper documentEntryMapper;
     DocumentService documentService;
 
     @BeforeEach
     void setUp() {
         documentEntryMapper = new DocumentEntryMapper();
-        documentService = new DocumentService(documentEntryMapper, documentRepository);
+        documentService = new DocumentService(documentEntryMapper, documentRepository, employeeClient);
     }
 
     public DocumentEntryDTO createDocumentEntryDTO(int i) {
@@ -66,7 +71,6 @@ class DocumentServiceTest {
         List<DocumentEntryDTO> actualDocumentEntryDTOS = documentService.uploadExcelDocument(file);
         Assertions.assertEquals(4, actualDocumentEntryDTOS.size());
 
-
         //      Manually Created Info from Excel File
         LocalDate docDate = LocalDate.of(2022, 11, 11);
         LocalDate effectiveDate = LocalDate.of(2022, 12, 11);
@@ -92,8 +96,14 @@ class DocumentServiceTest {
         List<DocumentEntryDTO> actualDocumentEntryDTOS = documentService.insertDocumentEntries(documentEntryDTOS);
 
         Assertions.assertEquals(documentEntryDTOS.size(), actualDocumentEntryDTOS.size());
-        Assertions.assertEquals(documentEntryDTOS.get(0), actualDocumentEntryDTOS.get(0));
-        Assertions.assertEquals(documentEntryDTOS.get(1), actualDocumentEntryDTOS.get(1));
+
+        assertThat(documentEntryDTOS.get(0)).usingRecursiveComparison()
+                .ignoringFields("employeeId")
+                .isEqualTo(actualDocumentEntryDTOS.get(0));
+
+        assertThat(documentEntryDTOS.get(1)).usingRecursiveComparison()
+                .ignoringFields("employeeId")
+                .isEqualTo(actualDocumentEntryDTOS.get(1));
     }
 
     @Test
@@ -106,12 +116,20 @@ class DocumentServiceTest {
 
     @Test
     void viewDocumentEntry() {
-        DocumentEntry documentEntry1 = new DocumentEntry(1L, LocalDate.of(2022, 10, 18), LocalDate.of(2022, 11, 15), 1L, 1L, BigDecimal.valueOf(600));
-        DocumentEntry documentEntry2 = new DocumentEntry(2L, LocalDate.of(2022, 11, 26), LocalDate.of(2022, 12, 5), 1L, 1L, BigDecimal.valueOf(300));
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "as", "sa", "asds", "asdsad", "as", true, true);
+        DocumentEntryDTO documentEntryDTO = createDocumentEntryDTO(1);
+        documentEntryDTO.setId(1L);
 
-        Mockito.when(documentRepository.findById(anyLong())).thenAnswer(invocationOnMock -> Stream.of(documentEntry1, documentEntry2).filter(documentEntry -> documentEntry.getId().equals(invocationOnMock.getArgument(0))).findFirst());
+        Mockito.when(documentRepository.findById(anyLong())).thenReturn(Optional.of(documentEntryMapper.dtoToEntity(documentEntryDTO)));
+        Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
-        Assertions.assertEquals(BigDecimal.valueOf(600), documentService.viewDocumentEntry(1L).getAmount());
+        DocumentWithEmployeeDTO expectedDocumentWithEmployeeDTO = DocumentWithEmployeeDTO.of(documentEntryDTO, employeeDTO);
+        DocumentWithEmployeeDTO actualDocumentWithEmployeeDTO = documentService.viewDocumentEntry(1L);
+
+        assertThat(actualDocumentWithEmployeeDTO)
+                .usingRecursiveComparison()
+                .ignoringFields("id")
+                .isEqualTo(expectedDocumentWithEmployeeDTO);
     }
 
     @Test
@@ -133,7 +151,9 @@ class DocumentServiceTest {
         Mockito.when(documentRepository.save(any())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         DocumentEntryDTO actualDTO = documentService.editDocumentEntry(createDocumentEntryDTO(1));
 
-        Assertions.assertEquals(createDocumentEntryDTO(1), actualDTO);
+        assertThat(createDocumentEntryDTO(1)).usingRecursiveComparison()
+                .ignoringFields("employeeId")
+                .isEqualTo(actualDTO);
     }
 
     @Test
