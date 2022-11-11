@@ -6,5 +6,5 @@ CREATE TABLE documents (id SERIAL PRIMARY KEY,
                             effective_date DATE,
                             employee_id INT,
                             benefit_id INT,
-                            amount INT)
+                            amount FLOAT)
 
