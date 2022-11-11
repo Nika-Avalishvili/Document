@@ -57,11 +57,9 @@ public class DocumentService {
         documentRepository.saveAll(docEntryList);
         List<DocumentEntryDTO> documentEntryDTOS = documentEntryMapper.entityToDto(docEntryList);
 
-        List<EmployeeDTO> employeeDTOs = IntStream.range(0, documentEntryDTOS.size())
-                .mapToObj(i -> employeeClient.getEmployeeById(documentEntryDTOS.get(i).getEmployeeId()))
+        return documentEntryDTOS.stream()
+                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO, employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId())))
                 .collect(Collectors.toList());
-        return IntStream.range(0, documentEntryDTOS.size())
-                .mapToObj(i -> DocumentWithEmployeeDTO.of(documentEntryDTOS.get(i), employeeDTOs.get(i))).collect(Collectors.toList());
     }
 
     public List<DocumentWithEmployeeDTO> insertDocumentEntries(List<DocumentEntryDTO> documentEntryDTOS) {
@@ -91,11 +89,9 @@ public class DocumentService {
         List<DocumentEntry> documentEntry = documentRepository.findByEffectiveDateBetween(startDate, endDate);
         List<DocumentEntryDTO> documentEntryDTOS = documentEntryMapper.entityToDto(documentEntry);
 
-        List<EmployeeDTO> employeeDTOs = IntStream.range(0, documentEntryDTOS.size())
-                .mapToObj(i -> employeeClient.getEmployeeById(documentEntryDTOS.get(i).getEmployeeId()))
+        return documentEntryDTOS.stream()
+                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO,employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId())))
                 .collect(Collectors.toList());
-        return IntStream.range(0, documentEntryDTOS.size())
-                .mapToObj(i -> DocumentWithEmployeeDTO.of(documentEntryDTOS.get(i), employeeDTOs.get(i))).collect(Collectors.toList());
     }
 
     public DocumentWithEmployeeDTO editDocumentEntry(DocumentEntryDTO documentEntryDTO) {
