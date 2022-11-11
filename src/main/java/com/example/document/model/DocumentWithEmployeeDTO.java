@@ -17,7 +17,6 @@ public class DocumentWithEmployeeDTO {
     private Long id;
     private LocalDate uploadDate;
     private LocalDate effectiveDate;
-    private Long employeeId;
     private EmployeeDTO employeeDTO;
     private Long benefitId;
     private BigDecimal amount;
@@ -27,7 +26,6 @@ public class DocumentWithEmployeeDTO {
                 .id(documentEntryDTO.getId())
                 .uploadDate(documentEntryDTO.getUploadDate())
                 .effectiveDate(documentEntryDTO.getEffectiveDate())
-                .employeeId(documentEntryDTO.getEmployeeId())
                 .employeeDTO(employeeDTO)
                 .benefitId(documentEntryDTO.getBenefitId())
                 .amount(documentEntryDTO.getAmount())

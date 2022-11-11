@@ -46,16 +46,12 @@ class DocumentControllerTest {
 
     @MockBean
     private EmployeeClient employeeClient;
-
     @Autowired
     private MockMvc mockMvc;
-
     @Autowired
     private DocumentService documentService;
-
     @Autowired
     private ObjectMapper objectMapper;
-
     @Autowired
     private DocumentRepository documentRepository;
 
@@ -71,15 +67,20 @@ class DocumentControllerTest {
                 .effectiveDate(LocalDate.of(2022 + i, 9, 30))
                 .employeeId(1L)
                 .benefitId(2L)
-                .amount(BigDecimal.valueOf(300))
+                .amount(BigDecimal.valueOf(300.0))
                 .build();
     }
 
     @Test
     void uploadExcelDocument() throws Exception {
+
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
+        Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
+
         Path path = Paths.get("src/test/resources/test_files/input_file.xlsx");
         String name = "input_file.xlsx";
         String contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
         MockMultipartFile file = new MockMultipartFile(
                 name,
                 name,
@@ -91,18 +92,18 @@ class DocumentControllerTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        List<DocumentEntryDTO> actualDocumentEntryDTOS = objectMapper.readValue(responseAsAString, new TypeReference<>() {
+        List<DocumentWithEmployeeDTO> actualDocumentEntryDTOS = objectMapper.readValue(responseAsAString, new TypeReference<>() {
         });
 
 //      Manually Created Info from Excel File
         LocalDate docDate = LocalDate.of(2022, 11, 11);
         LocalDate effectiveDate = LocalDate.of(2022, 12, 11);
-        List<DocumentEntryDTO> manuallyCreatedDocEntries =
+        List<DocumentWithEmployeeDTO> manuallyCreatedDocEntries =
                 List.of(
-                        new DocumentEntryDTO(1L, docDate, effectiveDate, 3L, 1L, BigDecimal.valueOf(897.82)),
-                        new DocumentEntryDTO(1L, docDate, effectiveDate, 12L, 2L, BigDecimal.valueOf(782.91)),
-                        new DocumentEntryDTO(1L, docDate, effectiveDate, 4L, 1L, BigDecimal.valueOf(100.78)),
-                        new DocumentEntryDTO(1L, docDate, effectiveDate, 5L, 2L, BigDecimal.valueOf(400.0))
+                        new DocumentWithEmployeeDTO(1L, docDate, effectiveDate, employeeDTO, 1L, BigDecimal.valueOf(897.82)),
+                        new DocumentWithEmployeeDTO(1L, docDate, effectiveDate, employeeDTO, 2L, BigDecimal.valueOf(782.91)),
+                        new DocumentWithEmployeeDTO(1L, docDate, effectiveDate, employeeDTO, 1L, BigDecimal.valueOf(100.78)),
+                        new DocumentWithEmployeeDTO(1L, docDate, effectiveDate, employeeDTO, 2L, BigDecimal.valueOf(400.0))
                 );
 
 
@@ -116,6 +117,9 @@ class DocumentControllerTest {
 
     @Test
     void insertDocumentEntries() throws Exception {
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
+        Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
+
         List<DocumentEntryDTO> documentEntryDTOS = List.of(createDocumentEntryDTO(1));
         documentService.insertDocumentEntries(documentEntryDTOS);
 
@@ -127,44 +131,51 @@ class DocumentControllerTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        List<DocumentEntryDTO> actualDocumentEntryDTOS = objectMapper.readValue(responseAsAString, new TypeReference<>() {
+        List<DocumentWithEmployeeDTO> actualDocumentEntryDTOS = objectMapper.readValue(responseAsAString, new TypeReference<>() {
         });
 
-        assertThat(actualDocumentEntryDTOS.stream().findFirst())
+        List<DocumentWithEmployeeDTO> expectedResult = List.of(DocumentWithEmployeeDTO.of(documentEntryDTOS.get(0), employeeDTO));
+
+        assertThat(actualDocumentEntryDTOS)
                 .usingRecursiveComparison()
-                .ignoringFields("value.id", "value.employeeId")
-                .isEqualTo(documentEntryDTOS.stream().findFirst());
+                .ignoringFields("id")
+                .isEqualTo(expectedResult);
     }
 
     @Test
     void viewAllDocuments() throws Exception {
+
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
+        Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
+
         List<DocumentEntryDTO> documentEntryDTOS = List.of(createDocumentEntryDTO(1), createDocumentEntryDTO(2));
         documentService.insertDocumentEntries(documentEntryDTOS);
+
+        List<DocumentWithEmployeeDTO> expectedDocumentWithEmployeeDTO = IntStream.range(0, documentEntryDTOS.size()).mapToObj(i -> DocumentWithEmployeeDTO.of(documentEntryDTOS.get(i), employeeDTO)).collect(Collectors.toList());
 
         String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.get("/document/viewAll"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        List<DocumentEntryDTO> actualDocumentEntryDtoList = objectMapper.readValue(responseAsAString, new TypeReference<>() {
+        List<DocumentWithEmployeeDTO> actualDocumentWithEmployeeDTO = objectMapper.readValue(responseAsAString, new TypeReference<>() {
         });
 
-        Assertions.assertEquals(2, documentEntryDTOS.size());
-        Assertions.assertEquals(2, actualDocumentEntryDtoList.size());
+        Assertions.assertEquals(2, expectedDocumentWithEmployeeDTO.size());
+        Assertions.assertEquals(2, actualDocumentWithEmployeeDTO.size());
 
-        DocumentEntryDTO expectedDocumentEntryDTO = documentEntryDTOS.stream().findFirst().orElseThrow();
-        DocumentEntryDTO actualDocumentEntryDTO = actualDocumentEntryDtoList.stream().findFirst().orElseThrow();
-
-        assertThat(expectedDocumentEntryDTO)
+        assertThat(expectedDocumentWithEmployeeDTO)
                 .usingRecursiveComparison()
+                .withComparatorForType(BigDecimal::compareTo, BigDecimal.class)
                 .ignoringFields("id", "employeeId")
-                .isEqualTo(actualDocumentEntryDTO);
+                .isEqualTo(actualDocumentWithEmployeeDTO);
     }
 
     @Test
     void viewDocumentEntry() throws Exception {
         DocumentEntryDTO documentEntryDTO = createDocumentEntryDTO(1);
+        documentEntryDTO.setId(1L);
         EmployeeDTO employeeDTO = EmployeeDTO.builder()
-                .employeeId(1L)
+                .id(1L)
                 .firstName("Nika")
                 .lastName("Avalishvili")
                 .department("Business Development")
@@ -174,11 +185,11 @@ class DocumentControllerTest {
                 .isPensionsPayer(true)
                 .build();
 
-        Long id = documentService.insertDocumentEntries(List.of(documentEntryDTO)).stream().findFirst().get().getId();
+        Long firstId = documentService.insertDocumentEntries(List.of(documentEntryDTO)).stream().findFirst().get().getId();
 
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
-        String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.get("/document/viewById/{id}", id))
+        String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.get("/document/viewById/{id}", firstId))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -188,6 +199,7 @@ class DocumentControllerTest {
 
         assertThat(actualDocumentWithEmployeeDTO)
                 .usingRecursiveComparison()
+                .withComparatorForType(BigDecimal::compareTo, BigDecimal.class)
                 .ignoringFields("id")
                 .isEqualTo(expectedDocumentWithEmployeeDTO);
     }
@@ -195,6 +207,9 @@ class DocumentControllerTest {
 
     @Test
     void viewMultipleDocumentEntries() throws Exception {
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
+        Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
+
         List<DocumentEntryDTO> documentEntryDTOS = IntStream.range(0, 5).mapToObj(this::createDocumentEntryDTO).collect(Collectors.toList());
 
         documentService.insertDocumentEntries(documentEntryDTOS);
@@ -210,18 +225,22 @@ class DocumentControllerTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        List<DocumentEntryDTO> actualDocumentEntryDTO = objectMapper.readValue(responseAsAString, new TypeReference<>() {
+        List<DocumentWithEmployeeDTO> actualDocumentWithEmployeeDTO = objectMapper.readValue(responseAsAString, new TypeReference<>() {
         });
 
-        Assertions.assertEquals(3, actualDocumentEntryDTO.size());
-        Assertions.assertEquals(actualDocumentEntryDTO.get(0).getEffectiveDate().getYear(), 2022);
-        Assertions.assertEquals(actualDocumentEntryDTO.get(1).getEffectiveDate().getYear(), 2023);
-        Assertions.assertEquals(actualDocumentEntryDTO.get(2).getEffectiveDate().getYear(), 2024);
+        Assertions.assertEquals(3, actualDocumentWithEmployeeDTO.size());
+        Assertions.assertEquals(actualDocumentWithEmployeeDTO.get(0).getEffectiveDate().getYear(), 2022);
+        Assertions.assertEquals(actualDocumentWithEmployeeDTO.get(1).getEffectiveDate().getYear(), 2023);
+        Assertions.assertEquals(actualDocumentWithEmployeeDTO.get(2).getEffectiveDate().getYear(), 2024);
+        Assertions.assertEquals(actualDocumentWithEmployeeDTO.get(2).getEmployeeDTO().getFirstName(), "Nika");
     }
 
 
     @Test
     void editDocumentEntry() throws Exception {
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
+        Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
+
         List<DocumentEntryDTO> documentEntryDTOS = IntStream.range(0, 2).mapToObj(this::createDocumentEntryDTO).collect(Collectors.toList());
         documentService.insertDocumentEntries(documentEntryDTOS);
 
@@ -233,20 +252,25 @@ class DocumentControllerTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        DocumentEntryDTO actualDocumentEntryDTO = objectMapper.readValue(responseAsAString, new TypeReference<>() {
+        DocumentWithEmployeeDTO actualDocumentWithEmployeeDTO = objectMapper.readValue(responseAsAString, new TypeReference<>() {
         });
+
+        DocumentWithEmployeeDTO expectedDocumentWithEmployeeDTO = DocumentWithEmployeeDTO.of(documentEntryDTOS.get(1), employeeDTO);
 
         assertThat(documentEntryDTOS.get(1))
                 .usingRecursiveComparison()
                 .ignoringFields("id", "employeeId")
-                .isEqualTo(actualDocumentEntryDTO);
+                .isEqualTo(actualDocumentWithEmployeeDTO);
     }
 
     @Test
-    void deleteEditDocumentEntry() throws Exception {
-        List<DocumentEntryDTO> documentEntryDTOS = IntStream.range(0, 2).mapToObj(this::createDocumentEntryDTO).collect(Collectors.toList());
+    void deleteDocumentEntry() throws Exception {
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
+        Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
-        Long firstId = documentService.insertDocumentEntries(documentEntryDTOS).stream().findFirst().get().getId();
+        List<DocumentEntryDTO> documentEntryDTOS = IntStream.range(0, 2).mapToObj(this::createDocumentEntryDTO).collect(Collectors.toList());
+        Long firstId = documentService.insertDocumentEntries(documentEntryDTOS).get(0).getId();
+
 
         mockMvc.perform(MockMvcRequestBuilders.delete("/document/deleteEntry?id={id}", firstId))
                 .andExpect(status().isOk())
@@ -256,27 +280,30 @@ class DocumentControllerTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        List<DocumentEntryDTO> actualDocumentEntryDTOList = objectMapper.readValue(lastResponseAsAString, new TypeReference<>() {
+        List<DocumentWithEmployeeDTO> actualDocumentEntryDTOList = objectMapper.readValue(lastResponseAsAString, new TypeReference<>() {
         });
+
+        List<DocumentWithEmployeeDTO> expectedDocumentWithEmployeeDTOS = List.of(DocumentWithEmployeeDTO.of(documentEntryDTOS.get(1), employeeDTO));
 
         assertThat(actualDocumentEntryDTOList)
                 .hasSize(1)
-                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("id", "employeeId")
-                .doesNotContain(documentEntryDTOS.get(0));
-
-        DocumentEntryDTO actualDocumentEntryDTO = actualDocumentEntryDTOList.stream().findFirst().orElseThrow();
-
-        assertThat(actualDocumentEntryDTO).usingRecursiveComparison().ignoringFields("id", "employeeId").isEqualTo(documentEntryDTOS.get(1));
+                .usingRecursiveComparison()
+                .withComparatorForType(BigDecimal::compareTo, BigDecimal.class)
+                .ignoringFields("value.id", "id")
+                .isEqualTo(expectedDocumentWithEmployeeDTOS);
     }
 
     @Test
     void deleteMultipleDocumentEntries() throws Exception {
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
+        Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
+
         List<DocumentEntryDTO> documentEntryDTOS = IntStream.range(0, 5).mapToObj(this::createDocumentEntryDTO).collect(Collectors.toList());
         documentService.insertDocumentEntries(documentEntryDTOS);
 
         List<String> ids = documentService.getAllDocuments().stream()
                 .map(documentEntryDTO -> String.valueOf(documentEntryDTO.getId()))
-                .limit(2)
+                .limit(3)
                 .collect(Collectors.toList());
 
         mockMvc.perform(MockMvcRequestBuilders.delete("/document/deleteMultipleEntries")
@@ -288,16 +315,18 @@ class DocumentControllerTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        List<DocumentEntryDTO> actualDocumentEntryDTOList = objectMapper.readValue(lastResponseAsAString, new TypeReference<>() {
+        List<DocumentWithEmployeeDTO> actualDocumentWithEmployeeDTOs = objectMapper.readValue(lastResponseAsAString, new TypeReference<>() {
         });
 
-        assertThat(actualDocumentEntryDTOList)
-                .hasSize(3)
-                .doesNotContain(documentEntryDTOS.get(0), documentEntryDTOS.get(1))
-                .contains(documentService.getAllDocuments().get(0),
-                        documentService.getAllDocuments().get(1),
-                        documentService.getAllDocuments().get(2))
+        List<DocumentWithEmployeeDTO> expectedDocumentWithEmployeeDTOs = List.of(DocumentWithEmployeeDTO.of(documentEntryDTOS.get(3), employeeDTO), DocumentWithEmployeeDTO.of(documentEntryDTOS.get(4), employeeDTO));
+
+        assertThat(actualDocumentWithEmployeeDTOs)
+                .hasSize(2)
                 .usingRecursiveComparison()
-                .ignoringFields("id", "employeeId");
+                .withComparatorForType(BigDecimal::compareTo, BigDecimal.class)
+                .ignoringFields("value.id", "id")
+                .isEqualTo(expectedDocumentWithEmployeeDTOs);
+
+
     }
 }

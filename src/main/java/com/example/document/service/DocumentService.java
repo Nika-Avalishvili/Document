@@ -19,6 +19,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +30,7 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final EmployeeClient employeeClient;
 
-    public List<DocumentEntryDTO> uploadExcelDocument(MultipartFile file) throws Exception {
+    public List<DocumentWithEmployeeDTO> uploadExcelDocument(MultipartFile file) throws Exception {
         InputStream inputStream = file.getInputStream();
         XSSFWorkbook xssfWorkbook = new XSSFWorkbook(inputStream);
         Sheet sheet = xssfWorkbook.getSheetAt(0);
@@ -53,37 +55,51 @@ public class DocumentService {
             docEntryList.add(newDocumentEntry);
         }
         documentRepository.saveAll(docEntryList);
-        return documentEntryMapper.entityToDto(docEntryList);
+        List<DocumentEntryDTO> documentEntryDTOS = documentEntryMapper.entityToDto(docEntryList);
+
+        return documentEntryDTOS.stream()
+                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO, employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId())))
+                .collect(Collectors.toList());
     }
 
-    public List<DocumentEntryDTO> insertDocumentEntries(List<DocumentEntryDTO> documentEntryDTOS) {
-        List<DocumentEntry> documentEntries = documentEntryMapper.dtoToEntity(documentEntryDTOS);
-        documentRepository.saveAll(documentEntries);
-        return documentEntryMapper.entityToDto(documentEntries);
+    public List<DocumentWithEmployeeDTO> insertDocumentEntries(List<DocumentEntryDTO> documentEntryDTOS) {
+        List<DocumentEntry> savedDocumentEntries = documentRepository.saveAll(documentEntryMapper.dtoToEntity(documentEntryDTOS));
+        List<DocumentEntryDTO> savedDocumentEntryDTOs = documentEntryMapper.entityToDto(savedDocumentEntries);
+
+        return savedDocumentEntryDTOs.stream()
+                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO, employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId())))
+                .collect(Collectors.toList());
     }
 
-    public List<DocumentEntryDTO> getAllDocuments() {
-        List<DocumentEntry> allDocumentEntries = documentRepository.findAll();
-        return documentEntryMapper.entityToDto(allDocumentEntries);
+    public List<DocumentWithEmployeeDTO> getAllDocuments() {
+        List<DocumentEntryDTO> allDocumentEntryDTOs = documentEntryMapper.entityToDto(documentRepository.findAll());
+
+        return allDocumentEntryDTOs.stream()
+                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO,employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId()))).collect(Collectors.toList());
     }
 
     public DocumentWithEmployeeDTO viewDocumentEntry(Long id) {
         DocumentEntry documentEntry = documentRepository.findById(id).orElse(null);
         DocumentEntryDTO documentEntryDTO = documentEntryMapper.entityToDto(documentEntry);
         EmployeeDTO employeeById = employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId());
-        employeeById.setEmployeeId(documentEntry.getEmployeeId());
         return DocumentWithEmployeeDTO.of(documentEntryDTO, employeeById);
     }
 
-    public List<DocumentEntryDTO> viewMultipleDocumentEntries(LocalDate startDate, LocalDate endDate) {
+    public List<DocumentWithEmployeeDTO> viewMultipleDocumentEntries(LocalDate startDate, LocalDate endDate) {
         List<DocumentEntry> documentEntry = documentRepository.findByEffectiveDateBetween(startDate, endDate);
-        return documentEntryMapper.entityToDto(documentEntry);
+        List<DocumentEntryDTO> documentEntryDTOS = documentEntryMapper.entityToDto(documentEntry);
+
+        return documentEntryDTOS.stream()
+                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO,employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId())))
+                .collect(Collectors.toList());
     }
 
-    public DocumentEntryDTO editDocumentEntry(DocumentEntryDTO documentEntryDTO) {
+    public DocumentWithEmployeeDTO editDocumentEntry(DocumentEntryDTO documentEntryDTO) {
         DocumentEntry documentEntry = documentEntryMapper.dtoToEntity(documentEntryDTO);
-        documentRepository.save(documentEntry);
-        return documentEntryMapper.entityToDto(documentEntry);
+        DocumentEntry savedDocumentEntry = documentRepository.save(documentEntry);
+        DocumentEntryDTO savedDocumentEntryDTO = documentEntryMapper.entityToDto(savedDocumentEntry);
+        EmployeeDTO employeeById = employeeClient.getEmployeeById(savedDocumentEntryDTO.getEmployeeId());
+        return DocumentWithEmployeeDTO.of(savedDocumentEntryDTO, employeeById);
     }
 
     public void deleteDocumentEntry(Long id) {

@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface DocumentRepository extends JpaRepository<DocumentEntry, Long> {
     void deleteAllByIdInBatch(Iterable<Long> ids);
+
     List<DocumentEntry> findByEffectiveDateBetween(LocalDate to, LocalDate from);
 
 }

@@ -19,17 +19,17 @@ public class DocumentController {
     private final DocumentService documentService;
 
     @PostMapping("/upload")
-    public List<DocumentEntryDTO> uploadExcelDocument(@RequestParam MultipartFile file) throws Exception {
+    public List<DocumentWithEmployeeDTO> uploadExcelDocument(@RequestParam MultipartFile file) throws Exception {
         return documentService.uploadExcelDocument(file);
     }
 
     @PostMapping("/insert")
-    public List<DocumentEntryDTO> InsertDocumentEntries(@RequestBody List<DocumentEntryDTO> documentEntryDTOS) {
+    public List<DocumentWithEmployeeDTO> InsertDocumentEntries(@RequestBody List<DocumentEntryDTO> documentEntryDTOS) {
         return documentService.insertDocumentEntries(documentEntryDTOS);
     }
 
     @GetMapping("/viewAll")
-    public List<DocumentEntryDTO> viewAllDocuments() {
+    public List<DocumentWithEmployeeDTO> viewAllDocuments() {
         return documentService.getAllDocuments();
     }
 
@@ -39,12 +39,12 @@ public class DocumentController {
     }
 
     @GetMapping("/viewMultipleByDates/{startDate}/{endDate}")
-    public List<DocumentEntryDTO> viewMultipleDocumentEntries(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+    public List<DocumentWithEmployeeDTO> viewMultipleDocumentEntries(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         return documentService.viewMultipleDocumentEntries(startDate, endDate);
     }
 
     @PutMapping("/updateEntry")
-    public DocumentEntryDTO editDocumentEntry(@RequestBody DocumentEntryDTO documentEntryDTO) {
+    public DocumentWithEmployeeDTO editDocumentEntry(@RequestBody DocumentEntryDTO documentEntryDTO) {
         return documentService.editDocumentEntry(documentEntryDTO);
     }
 

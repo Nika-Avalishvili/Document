@@ -2,7 +2,6 @@ package com.example.document.service;
 
 import com.example.document.client.EmployeeClient;
 import com.example.document.client.EmployeeDTO;
-import com.example.document.model.DocumentEntry;
 import com.example.document.model.DocumentEntryDTO;
 import com.example.document.model.DocumentEntryMapper;
 import com.example.document.model.DocumentWithEmployeeDTO;
@@ -68,21 +67,24 @@ class DocumentServiceTest {
                 contentType,
                 readAllBytes(path));
 
-        List<DocumentEntryDTO> actualDocumentEntryDTOS = documentService.uploadExcelDocument(file);
-        Assertions.assertEquals(4, actualDocumentEntryDTOS.size());
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
+        Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
+
+        List<DocumentWithEmployeeDTO> actualDocumentWithEmployeeDTOS = documentService.uploadExcelDocument(file);
+        Assertions.assertEquals(4, actualDocumentWithEmployeeDTOS.size());
 
         //      Manually Created Info from Excel File
         LocalDate docDate = LocalDate.of(2022, 11, 11);
         LocalDate effectiveDate = LocalDate.of(2022, 12, 11);
-        List<DocumentEntryDTO> manuallyCreatedDocEntries =
+        List<DocumentWithEmployeeDTO> manuallyCreatedDocEntries =
                 List.of(
-                        new DocumentEntryDTO(1L, docDate, effectiveDate, 3L, 1L, BigDecimal.valueOf(897.82)),
-                        new DocumentEntryDTO(1L, docDate, effectiveDate, 12L, 2L, BigDecimal.valueOf(782.91)),
-                        new DocumentEntryDTO(1L, docDate, effectiveDate, 4L, 1L, BigDecimal.valueOf(100.78)),
-                        new DocumentEntryDTO(1L, docDate, effectiveDate, 5L, 2L, BigDecimal.valueOf(400.0))
+                        new DocumentWithEmployeeDTO(1L, docDate, effectiveDate, employeeDTO, 1L, BigDecimal.valueOf(897.82)),
+                        new DocumentWithEmployeeDTO(1L, docDate, effectiveDate, employeeDTO, 2L, BigDecimal.valueOf(782.91)),
+                        new DocumentWithEmployeeDTO(1L, docDate, effectiveDate, employeeDTO, 1L, BigDecimal.valueOf(100.78)),
+                        new DocumentWithEmployeeDTO(1L, docDate, effectiveDate, employeeDTO, 2L, BigDecimal.valueOf(400.0))
                 );
 
-        assertThat(actualDocumentEntryDTOS)
+        assertThat(actualDocumentWithEmployeeDTOS)
                 .usingRecursiveComparison()
                 .ignoringFields("value.id", "id")
                 .isEqualTo(manuallyCreatedDocEntries);
@@ -93,30 +95,42 @@ class DocumentServiceTest {
         List<DocumentEntryDTO> documentEntryDTOS = List.of(createDocumentEntryDTO(1), createDocumentEntryDTO(2));
         Mockito.when(documentRepository.saveAll(any())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        List<DocumentEntryDTO> actualDocumentEntryDTOS = documentService.insertDocumentEntries(documentEntryDTOS);
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
+        Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
-        Assertions.assertEquals(documentEntryDTOS.size(), actualDocumentEntryDTOS.size());
+        List<DocumentWithEmployeeDTO> actualDocumentWithEmployeeDTO = documentService.insertDocumentEntries(documentEntryDTOS);
+
+        Assertions.assertEquals(documentEntryDTOS.size(), actualDocumentWithEmployeeDTO.size());
 
         assertThat(documentEntryDTOS.get(0)).usingRecursiveComparison()
                 .ignoringFields("employeeId")
-                .isEqualTo(actualDocumentEntryDTOS.get(0));
+                .isEqualTo(actualDocumentWithEmployeeDTO.get(0));
 
         assertThat(documentEntryDTOS.get(1)).usingRecursiveComparison()
                 .ignoringFields("employeeId")
-                .isEqualTo(actualDocumentEntryDTOS.get(1));
+                .isEqualTo(actualDocumentWithEmployeeDTO.get(1));
+
+        assertThat(employeeDTO.getFirstName())
+                .isEqualTo(actualDocumentWithEmployeeDTO.get(1).getEmployeeDTO().getFirstName());
     }
 
     @Test
     void getAllDocuments() {
         List<DocumentEntryDTO> documentEntryDTOS = List.of(createDocumentEntryDTO(1), createDocumentEntryDTO(2));
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
+
+        Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
         Mockito.when(documentRepository.findAll()).thenReturn(documentEntryMapper.dtoToEntity(documentEntryDTOS));
 
-        Assertions.assertEquals(2, documentService.getAllDocuments().size());
+        List<DocumentWithEmployeeDTO> allDocuments = documentService.getAllDocuments();
+
+        Assertions.assertEquals(2, allDocuments.size());
+        assertThat(allDocuments.get(0).getEmployeeDTO().getLastName()).isEqualTo(employeeDTO.getLastName());
     }
 
     @Test
     void viewDocumentEntry() {
-        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "as", "sa", "asds", "asdsad", "as", true, true);
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
         DocumentEntryDTO documentEntryDTO = createDocumentEntryDTO(1);
         documentEntryDTO.setId(1L);
 
@@ -139,21 +153,31 @@ class DocumentServiceTest {
         LocalDate startDate = LocalDate.of(2022, 1, 1);
         LocalDate endDate = LocalDate.of(2024, 12, 31);
 
-        Mockito.when(documentRepository.findByEffectiveDateBetween(any(), any())).thenAnswer(invocationOnMock -> documentEntryDTOS.stream().filter(e -> (e.getEffectiveDate().isAfter(startDate) && e.getEffectiveDate().isBefore(endDate))).collect(Collectors.toList()));
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
+        Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
-        List<DocumentEntry> actualDocumentEntries = documentRepository.findByEffectiveDateBetween(startDate, endDate);
+        Mockito.when(documentRepository.findByEffectiveDateBetween(any(), any())).thenAnswer(invocationOnMock -> documentEntryMapper.dtoToEntity(documentEntryDTOS).stream().filter(e -> (e.getEffectiveDate().isAfter(startDate) && e.getEffectiveDate().isBefore(endDate))).collect(Collectors.toList()));
 
-        Assertions.assertEquals(3, actualDocumentEntries.size());
+        List<DocumentWithEmployeeDTO> actualDocumentWithEmployeeDTOs = documentService.viewMultipleDocumentEntries(startDate, endDate);
+
+
+        Assertions.assertEquals(3, actualDocumentWithEmployeeDTOs.size());
+        assertThat(actualDocumentWithEmployeeDTOs.get(0).getEmployeeDTO().getDepartment())
+                .isEqualTo(employeeDTO.getDepartment());
     }
 
     @Test
     void editDocumentEntry() {
-        Mockito.when(documentRepository.save(any())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        DocumentEntryDTO actualDTO = documentService.editDocumentEntry(createDocumentEntryDTO(1));
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
+        Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
-        assertThat(createDocumentEntryDTO(1)).usingRecursiveComparison()
-                .ignoringFields("employeeId")
-                .isEqualTo(actualDTO);
+        Mockito.when(documentRepository.save(any())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        DocumentWithEmployeeDTO actualDocumentWithEmployeeDTOs = documentService.editDocumentEntry(createDocumentEntryDTO(1));
+
+        DocumentWithEmployeeDTO expectedDocumentWithEmployeeDTOs = DocumentWithEmployeeDTO.of(createDocumentEntryDTO(1), employeeDTO);
+
+        assertThat(actualDocumentWithEmployeeDTOs)
+                .isEqualTo(expectedDocumentWithEmployeeDTOs);
     }
 
     @Test
