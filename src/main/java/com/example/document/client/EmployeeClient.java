@@ -19,7 +19,6 @@ public class EmployeeClient {
     public EmployeeDTO getEmployeeById(long employeeId) {
         String url = fromHttpUrl(employeeUrl + "/employee/{employeeId}")
                 .buildAndExpand(employeeId).toUriString();
-
         return restTemplate.getForObject(url, EmployeeDTO.class);
     }
 }
