@@ -1,8 +1,10 @@
 package com.example.document.client;
 
+import com.example.document.exceptionHandler.DocumentUploadFailedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import static org.springframework.web.util.UriComponentsBuilder.fromHttpUrl;
@@ -19,6 +21,11 @@ public class EmployeeClient {
     public EmployeeDTO getEmployeeById(long employeeId) {
         String url = fromHttpUrl(employeeUrl + "/employee/{employeeId}")
                 .buildAndExpand(employeeId).toUriString();
-        return restTemplate.getForObject(url, EmployeeDTO.class);
+        try {
+            return restTemplate.getForObject(url, EmployeeDTO.class);
+        } catch (HttpClientErrorException exception) {
+            throw new DocumentUploadFailedException(exception.getStatusCode(), exception.getMessage());
+        }
+
     }
 }

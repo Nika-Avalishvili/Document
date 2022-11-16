@@ -36,19 +36,12 @@ public class DocumentService {
 
         List<DocumentEntry> docEntryList = new ArrayList<>();
 
-//        Employee validation
-        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-            Row row = sheet.getRow(i);
-            Long employeeId = (long) row.getCell(2).getNumericCellValue();
-            employeeClient.getEmployeeById(employeeId);
-        }
-
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
             LocalDate uploadDate = row.getCell(0).getLocalDateTimeCellValue().toLocalDate();
             LocalDate effectiveDate = row.getCell(1).getLocalDateTimeCellValue().toLocalDate();
             Long employeeId = (long) row.getCell(2).getNumericCellValue();
-
+            employeeClient.getEmployeeById(employeeId);
 
             Long benefitId = (long) row.getCell(3).getNumericCellValue();
             BigDecimal amount = BigDecimal.valueOf(row.getCell(4).getNumericCellValue());
