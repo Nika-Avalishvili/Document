@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.math.BigDecimal;
 import java.nio.file.Path;
@@ -141,7 +142,6 @@ class DocumentControllerTest {
                 .ignoringFields("id")
                 .isEqualTo(expectedResult);
     }
-
     @Test
     void viewAllDocuments() throws Exception {
 
