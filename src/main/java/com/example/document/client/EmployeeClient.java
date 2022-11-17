@@ -23,7 +23,7 @@ public class EmployeeClient {
                 .buildAndExpand(employeeId).toUriString();
         try {
             return restTemplate.getForObject(url, EmployeeDTO.class);
-        } catch (HttpClientErrorException exception) {
+        } catch (HttpClientErrorException.NotFound exception) {
             throw new DocumentUploadFailedException(exception.getStatusCode(), exception.getMessage());
         }
 
