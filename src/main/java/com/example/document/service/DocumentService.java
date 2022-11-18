@@ -18,9 +18,10 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -36,12 +37,17 @@ public class DocumentService {
         Sheet sheet = xssfWorkbook.getSheetAt(0);
 
         List<DocumentEntry> docEntryList = new ArrayList<>();
+        Map<Long, EmployeeDTO> mapOfEmployees = new HashMap<>();
 
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
             LocalDate uploadDate = row.getCell(0).getLocalDateTimeCellValue().toLocalDate();
             LocalDate effectiveDate = row.getCell(1).getLocalDateTimeCellValue().toLocalDate();
             Long employeeId = (long) row.getCell(2).getNumericCellValue();
+
+            mapOfEmployees.put(employeeId, employeeClient.getEmployeeById(employeeId));
+
+
             Long benefitId = (long) row.getCell(3).getNumericCellValue();
             BigDecimal amount = BigDecimal.valueOf(row.getCell(4).getNumericCellValue());
 
@@ -58,24 +64,32 @@ public class DocumentService {
         List<DocumentEntryDTO> documentEntryDTOS = documentEntryMapper.entityToDto(docEntryList);
 
         return documentEntryDTOS.stream()
-                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO, employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId())))
+                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO, mapOfEmployees.get(documentEntryDTO.getEmployeeId())))
                 .collect(Collectors.toList());
     }
 
     public List<DocumentWithEmployeeDTO> insertDocumentEntries(List<DocumentEntryDTO> documentEntryDTOS) {
+
+        Map<Long, EmployeeDTO> mapOfEmployees = new HashMap<>();
+
+        //Employee validation
+        for (int i = 0; i < documentEntryDTOS.size(); i++) {
+            Long employeeId = documentEntryDTOS.get(i).getEmployeeId();
+            mapOfEmployees.put(employeeId, employeeClient.getEmployeeById(employeeId));
+        }
+
         List<DocumentEntry> savedDocumentEntries = documentRepository.saveAll(documentEntryMapper.dtoToEntity(documentEntryDTOS));
         List<DocumentEntryDTO> savedDocumentEntryDTOs = documentEntryMapper.entityToDto(savedDocumentEntries);
 
         return savedDocumentEntryDTOs.stream()
-                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO, employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId())))
+                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO, mapOfEmployees.get(documentEntryDTO.getEmployeeId())))
                 .collect(Collectors.toList());
     }
 
     public List<DocumentWithEmployeeDTO> getAllDocuments() {
         List<DocumentEntryDTO> allDocumentEntryDTOs = documentEntryMapper.entityToDto(documentRepository.findAll());
-
         return allDocumentEntryDTOs.stream()
-                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO,employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId()))).collect(Collectors.toList());
+                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO, employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId()))).collect(Collectors.toList());
     }
 
     public DocumentWithEmployeeDTO viewDocumentEntry(Long id) {
@@ -90,7 +104,7 @@ public class DocumentService {
         List<DocumentEntryDTO> documentEntryDTOS = documentEntryMapper.entityToDto(documentEntry);
 
         return documentEntryDTOS.stream()
-                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO,employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId())))
+                .map(documentEntryDTO -> DocumentWithEmployeeDTO.of(documentEntryDTO, employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId())))
                 .collect(Collectors.toList());
     }
 
