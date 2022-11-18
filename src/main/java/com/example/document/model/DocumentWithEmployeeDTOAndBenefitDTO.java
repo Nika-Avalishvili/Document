@@ -1,5 +1,6 @@
 package com.example.document.model;
 
+import com.example.document.client.BenefitDTO;
 import com.example.document.client.EmployeeDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,21 +14,21 @@ import java.time.LocalDate;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class DocumentWithEmployeeDTO {
+public class DocumentWithEmployeeDTOAndBenefitDTO {
     private Long id;
     private LocalDate uploadDate;
     private LocalDate effectiveDate;
     private EmployeeDTO employeeDTO;
-    private Long benefitId;
+    private BenefitDTO benefitDTO;
     private BigDecimal amount;
 
-    public static DocumentWithEmployeeDTO of(DocumentEntryDTO documentEntryDTO, EmployeeDTO employeeDTO) {
-        return DocumentWithEmployeeDTO.builder()
+    public static DocumentWithEmployeeDTOAndBenefitDTO of(DocumentEntryDTO documentEntryDTO, EmployeeDTO employeeDTO, BenefitDTO benefitDTO) {
+        return DocumentWithEmployeeDTOAndBenefitDTO.builder()
                 .id(documentEntryDTO.getId())
                 .uploadDate(documentEntryDTO.getUploadDate())
                 .effectiveDate(documentEntryDTO.getEffectiveDate())
                 .employeeDTO(employeeDTO)
-                .benefitId(documentEntryDTO.getBenefitId())
+                .benefitDTO(benefitDTO)
                 .amount(documentEntryDTO.getAmount())
                 .build();
     }

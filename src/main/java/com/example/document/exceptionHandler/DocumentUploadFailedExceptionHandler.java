@@ -11,11 +11,20 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 public class DocumentUploadFailedExceptionHandler extends ResponseEntityExceptionHandler {
 
-
-    @ExceptionHandler(value = {DocumentUploadFailedException.class})
-    protected ResponseEntity<Object> handleConflict(RuntimeException ex, WebRequest request) {
+    @ExceptionHandler(value = {EmployeeNotFoundException.class})
+    protected ResponseEntity<Object> handleEmployeeNotFoundConflict(RuntimeException ex, WebRequest request) {
 
         String errorMessage = "\"Document upload failed!\"\n" + ex.getMessage().split(":")[1].strip();
+
+        return handleExceptionInternal(ex, errorMessage,
+                new HttpHeaders(), HttpStatus.NOT_FOUND, request);
+    }
+
+    @ExceptionHandler(value = {BenefitNotFoundException.class})
+    protected ResponseEntity<Object> handleBenefitNotFoundConflict(RuntimeException ex, WebRequest request) {
+        String[] text = ex.getMessage().split("/");
+
+        String errorMessage = "\"Document upload failed!\"\n" + String.format("\"Benefit with benefit_id %s doesn't exist!\"", text[4]);
 
         return handleExceptionInternal(ex, errorMessage,
                 new HttpHeaders(), HttpStatus.NOT_FOUND, request);

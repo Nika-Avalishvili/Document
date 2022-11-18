@@ -1,10 +1,9 @@
 package com.example.document.service;
 
-import com.example.document.client.EmployeeClient;
-import com.example.document.client.EmployeeDTO;
+import com.example.document.client.*;
 import com.example.document.model.DocumentEntryDTO;
 import com.example.document.model.DocumentEntryMapper;
-import com.example.document.model.DocumentWithEmployeeDTO;
+import com.example.document.model.DocumentWithEmployeeDTOAndBenefitDTO;
 import com.example.document.repository.DocumentRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,13 +36,16 @@ class DocumentServiceTest {
     DocumentRepository documentRepository;
     @Mock
     EmployeeClient employeeClient;
+
+    @Mock
+    BenefitClient benefitClient;
     DocumentEntryMapper documentEntryMapper;
     DocumentService documentService;
 
     @BeforeEach
     void setUp() {
         documentEntryMapper = new DocumentEntryMapper();
-        documentService = new DocumentService(documentEntryMapper, documentRepository, employeeClient);
+        documentService = new DocumentService(documentEntryMapper, documentRepository, employeeClient, benefitClient);
     }
 
     public DocumentEntryDTO createDocumentEntryDTO(int i) {
@@ -68,23 +70,25 @@ class DocumentServiceTest {
                 readAllBytes(path));
 
         EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
+        BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
+        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
-        List<DocumentWithEmployeeDTO> actualDocumentWithEmployeeDTOS = documentService.uploadExcelDocument(file);
-        Assertions.assertEquals(4, actualDocumentWithEmployeeDTOS.size());
+        List<DocumentWithEmployeeDTOAndBenefitDTO> actualDocumentWithEmployeeDTOAndBenefitDTOS = documentService.uploadExcelDocument(file);
+        Assertions.assertEquals(4, actualDocumentWithEmployeeDTOAndBenefitDTOS.size());
 
         //      Manually Created Info from Excel File
         LocalDate docDate = LocalDate.of(2022, 11, 11);
         LocalDate effectiveDate = LocalDate.of(2022, 12, 11);
-        List<DocumentWithEmployeeDTO> manuallyCreatedDocEntries =
+        List<DocumentWithEmployeeDTOAndBenefitDTO> manuallyCreatedDocEntries =
                 List.of(
-                        new DocumentWithEmployeeDTO(1L, docDate, effectiveDate, employeeDTO, 1L, BigDecimal.valueOf(897.82)),
-                        new DocumentWithEmployeeDTO(1L, docDate, effectiveDate, employeeDTO, 2L, BigDecimal.valueOf(782.91)),
-                        new DocumentWithEmployeeDTO(1L, docDate, effectiveDate, employeeDTO, 1L, BigDecimal.valueOf(100.78)),
-                        new DocumentWithEmployeeDTO(1L, docDate, effectiveDate, employeeDTO, 2L, BigDecimal.valueOf(400.0))
+                        new DocumentWithEmployeeDTOAndBenefitDTO(1L, docDate, effectiveDate, employeeDTO, benefitDTO, BigDecimal.valueOf(897.82)),
+                        new DocumentWithEmployeeDTOAndBenefitDTO(1L, docDate, effectiveDate, employeeDTO, benefitDTO, BigDecimal.valueOf(782.91)),
+                        new DocumentWithEmployeeDTOAndBenefitDTO(1L, docDate, effectiveDate, employeeDTO, benefitDTO, BigDecimal.valueOf(100.78)),
+                        new DocumentWithEmployeeDTOAndBenefitDTO(1L, docDate, effectiveDate, employeeDTO, benefitDTO, BigDecimal.valueOf(400.0))
                 );
 
-        assertThat(actualDocumentWithEmployeeDTOS)
+        assertThat(actualDocumentWithEmployeeDTOAndBenefitDTOS)
                 .usingRecursiveComparison()
                 .ignoringFields("value.id", "id")
                 .isEqualTo(manuallyCreatedDocEntries);
@@ -98,20 +102,25 @@ class DocumentServiceTest {
         EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
-        List<DocumentWithEmployeeDTO> actualDocumentWithEmployeeDTO = documentService.insertDocumentEntries(documentEntryDTOS);
+        BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
+        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
-        Assertions.assertEquals(documentEntryDTOS.size(), actualDocumentWithEmployeeDTO.size());
+        List<DocumentWithEmployeeDTOAndBenefitDTO> actualDocumentWithEmployeeDTOAndBenefitDTO = documentService.insertDocumentEntries(documentEntryDTOS);
+        List<DocumentWithEmployeeDTOAndBenefitDTO> expectedDocumentWithEmployeeDTOAndBenefitDTO = List.of(DocumentWithEmployeeDTOAndBenefitDTO.of(documentEntryDTOS.get(0),employeeDTO, benefitDTO),
+                DocumentWithEmployeeDTOAndBenefitDTO.of(documentEntryDTOS.get(1), employeeDTO, benefitDTO));
 
-        assertThat(documentEntryDTOS.get(0)).usingRecursiveComparison()
+        Assertions.assertEquals(expectedDocumentWithEmployeeDTOAndBenefitDTO.size(), actualDocumentWithEmployeeDTOAndBenefitDTO.size());
+
+        assertThat(expectedDocumentWithEmployeeDTOAndBenefitDTO.get(0)).usingRecursiveComparison()
                 .ignoringFields("employeeId")
-                .isEqualTo(actualDocumentWithEmployeeDTO.get(0));
+                .isEqualTo(actualDocumentWithEmployeeDTOAndBenefitDTO.get(0));
 
-        assertThat(documentEntryDTOS.get(1)).usingRecursiveComparison()
+        assertThat(expectedDocumentWithEmployeeDTOAndBenefitDTO.get(1)).usingRecursiveComparison()
                 .ignoringFields("employeeId")
-                .isEqualTo(actualDocumentWithEmployeeDTO.get(1));
+                .isEqualTo(actualDocumentWithEmployeeDTOAndBenefitDTO.get(1));
 
         assertThat(employeeDTO.getFirstName())
-                .isEqualTo(actualDocumentWithEmployeeDTO.get(1).getEmployeeDTO().getFirstName());
+                .isEqualTo(actualDocumentWithEmployeeDTOAndBenefitDTO.get(1).getEmployeeDTO().getFirstName());
     }
 
     @Test
@@ -122,7 +131,7 @@ class DocumentServiceTest {
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
         Mockito.when(documentRepository.findAll()).thenReturn(documentEntryMapper.dtoToEntity(documentEntryDTOS));
 
-        List<DocumentWithEmployeeDTO> allDocuments = documentService.getAllDocuments();
+        List<DocumentWithEmployeeDTOAndBenefitDTO> allDocuments = documentService.getAllDocuments();
 
         Assertions.assertEquals(2, allDocuments.size());
         assertThat(allDocuments.get(0).getEmployeeDTO().getLastName()).isEqualTo(employeeDTO.getLastName());
@@ -134,16 +143,20 @@ class DocumentServiceTest {
         DocumentEntryDTO documentEntryDTO = createDocumentEntryDTO(1);
         documentEntryDTO.setId(1L);
 
+        BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
+
+
         Mockito.when(documentRepository.findById(anyLong())).thenReturn(Optional.of(documentEntryMapper.dtoToEntity(documentEntryDTO)));
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
+        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
-        DocumentWithEmployeeDTO expectedDocumentWithEmployeeDTO = DocumentWithEmployeeDTO.of(documentEntryDTO, employeeDTO);
-        DocumentWithEmployeeDTO actualDocumentWithEmployeeDTO = documentService.viewDocumentEntry(1L);
+        DocumentWithEmployeeDTOAndBenefitDTO expectedDocumentWithEmployeeDTOAndBenefitDTO = DocumentWithEmployeeDTOAndBenefitDTO.of(documentEntryDTO, employeeDTO, benefitDTO);
+        DocumentWithEmployeeDTOAndBenefitDTO actualDocumentWithEmployeeDTOAndBenefitDTO = documentService.viewDocumentEntry(1L);
 
-        assertThat(actualDocumentWithEmployeeDTO)
+        assertThat(actualDocumentWithEmployeeDTOAndBenefitDTO)
                 .usingRecursiveComparison()
                 .ignoringFields("id")
-                .isEqualTo(expectedDocumentWithEmployeeDTO);
+                .isEqualTo(expectedDocumentWithEmployeeDTOAndBenefitDTO);
     }
 
     @Test
@@ -158,11 +171,11 @@ class DocumentServiceTest {
 
         Mockito.when(documentRepository.findByEffectiveDateBetween(any(), any())).thenAnswer(invocationOnMock -> documentEntryMapper.dtoToEntity(documentEntryDTOS).stream().filter(e -> (e.getEffectiveDate().isAfter(startDate) && e.getEffectiveDate().isBefore(endDate))).collect(Collectors.toList()));
 
-        List<DocumentWithEmployeeDTO> actualDocumentWithEmployeeDTOs = documentService.viewMultipleDocumentEntries(startDate, endDate);
+        List<DocumentWithEmployeeDTOAndBenefitDTO> actualDocumentWithEmployeeDTOAndBenefitDTOS = documentService.viewMultipleDocumentEntries(startDate, endDate);
 
 
-        Assertions.assertEquals(3, actualDocumentWithEmployeeDTOs.size());
-        assertThat(actualDocumentWithEmployeeDTOs.get(0).getEmployeeDTO().getDepartment())
+        Assertions.assertEquals(3, actualDocumentWithEmployeeDTOAndBenefitDTOS.size());
+        assertThat(actualDocumentWithEmployeeDTOAndBenefitDTOS.get(0).getEmployeeDTO().getDepartment())
                 .isEqualTo(employeeDTO.getDepartment());
     }
 
@@ -171,13 +184,16 @@ class DocumentServiceTest {
         EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
+        BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
+        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
+
         Mockito.when(documentRepository.save(any())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        DocumentWithEmployeeDTO actualDocumentWithEmployeeDTOs = documentService.editDocumentEntry(createDocumentEntryDTO(1));
+        DocumentWithEmployeeDTOAndBenefitDTO actualDocumentWithEmployeeDTOAndBenefitDTOs = documentService.editDocumentEntry(createDocumentEntryDTO(1));
 
-        DocumentWithEmployeeDTO expectedDocumentWithEmployeeDTOs = DocumentWithEmployeeDTO.of(createDocumentEntryDTO(1), employeeDTO);
+        DocumentWithEmployeeDTOAndBenefitDTO expectedDocumentWithEmployeeDTOAndBenefitDTOs = DocumentWithEmployeeDTOAndBenefitDTO.of(createDocumentEntryDTO(1), employeeDTO, benefitDTO);
 
-        assertThat(actualDocumentWithEmployeeDTOs)
-                .isEqualTo(expectedDocumentWithEmployeeDTOs);
+        assertThat(actualDocumentWithEmployeeDTOAndBenefitDTOs)
+                .isEqualTo(expectedDocumentWithEmployeeDTOAndBenefitDTOs);
     }
 
     @Test

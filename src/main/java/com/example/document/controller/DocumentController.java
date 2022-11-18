@@ -1,7 +1,7 @@
 package com.example.document.controller;
 
 import com.example.document.model.DocumentEntryDTO;
-import com.example.document.model.DocumentWithEmployeeDTO;
+import com.example.document.model.DocumentWithEmployeeDTOAndBenefitDTO;
 import com.example.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -19,32 +19,32 @@ public class DocumentController {
     private final DocumentService documentService;
 
     @PostMapping("/upload")
-    public List<DocumentWithEmployeeDTO> uploadExcelDocument(@RequestParam MultipartFile file) throws Exception {
+    public List<DocumentWithEmployeeDTOAndBenefitDTO> uploadExcelDocument(@RequestParam MultipartFile file) throws Exception {
         return documentService.uploadExcelDocument(file);
     }
 
     @PostMapping("/insert")
-    public List<DocumentWithEmployeeDTO> InsertDocumentEntries(@RequestBody List<DocumentEntryDTO> documentEntryDTOS) {
+    public List<DocumentWithEmployeeDTOAndBenefitDTO> InsertDocumentEntries(@RequestBody List<DocumentEntryDTO> documentEntryDTOS) {
         return documentService.insertDocumentEntries(documentEntryDTOS);
     }
 
     @GetMapping("/viewAll")
-    public List<DocumentWithEmployeeDTO> viewAllDocuments() {
+    public List<DocumentWithEmployeeDTOAndBenefitDTO> viewAllDocuments() {
         return documentService.getAllDocuments();
     }
 
     @GetMapping("/viewById/{id}")
-    public DocumentWithEmployeeDTO viewDocumentEntry(@PathVariable Long id) {
+    public DocumentWithEmployeeDTOAndBenefitDTO viewDocumentEntry(@PathVariable Long id) {
         return documentService.viewDocumentEntry(id);
     }
 
     @GetMapping("/viewMultipleByDates/{startDate}/{endDate}")
-    public List<DocumentWithEmployeeDTO> viewMultipleDocumentEntries(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+    public List<DocumentWithEmployeeDTOAndBenefitDTO> viewMultipleDocumentEntries(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         return documentService.viewMultipleDocumentEntries(startDate, endDate);
     }
 
     @PutMapping("/updateEntry")
-    public DocumentWithEmployeeDTO editDocumentEntry(@RequestBody DocumentEntryDTO documentEntryDTO) {
+    public DocumentWithEmployeeDTOAndBenefitDTO editDocumentEntry(@RequestBody DocumentEntryDTO documentEntryDTO) {
         return documentService.editDocumentEntry(documentEntryDTO);
     }
 
