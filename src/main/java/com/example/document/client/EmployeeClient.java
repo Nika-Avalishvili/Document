@@ -1,6 +1,6 @@
 package com.example.document.client;
 
-import com.example.document.exceptionHandler.DocumentUploadFailedException;
+import com.example.document.exceptionHandler.EmployeeNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -24,7 +24,7 @@ public class EmployeeClient {
         try {
             return restTemplate.getForObject(url, EmployeeDTO.class);
         } catch (HttpClientErrorException.NotFound exception) {
-            throw new DocumentUploadFailedException(exception.getStatusCode(), exception.getMessage());
+            throw new EmployeeNotFoundException(exception.getStatusCode(), exception.getMessage());
         }
 
     }
