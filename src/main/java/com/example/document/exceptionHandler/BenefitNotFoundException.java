@@ -4,10 +4,17 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 public class BenefitNotFoundException extends WebClientResponseException {
-    public BenefitNotFoundException(String message, int statusCode, String statusText, HttpHeaders headers, byte[] responseBody, Charset charset) {
-        super(message, statusCode, statusText, headers, responseBody, charset);
+
+    public BenefitNotFoundException(WebClientResponseException.NotFound exception) {
+        super(exception.getMessage(),
+                exception.getRawStatusCode(),
+                exception.getStatusText(),
+                exception.getHeaders(),
+                exception.getResponseBodyAsByteArray(),
+                StandardCharsets.UTF_8);
     }
 
 }

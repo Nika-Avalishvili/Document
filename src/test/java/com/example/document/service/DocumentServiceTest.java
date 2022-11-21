@@ -72,7 +72,7 @@ class DocumentServiceTest {
         EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
         BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
-        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
+        Mockito.when(benefitClient.getBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
         List<DocumentWithEmployeeDTOAndBenefitDTO> actualDocumentWithEmployeeDTOAndBenefitDTOS = documentService.uploadExcelDocument(file);
         Assertions.assertEquals(4, actualDocumentWithEmployeeDTOAndBenefitDTOS.size());
@@ -103,7 +103,7 @@ class DocumentServiceTest {
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
         BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
-        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
+        Mockito.when(benefitClient.getBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
         List<DocumentWithEmployeeDTOAndBenefitDTO> actualDocumentWithEmployeeDTOAndBenefitDTO = documentService.insertDocumentEntries(documentEntryDTOS);
         List<DocumentWithEmployeeDTOAndBenefitDTO> expectedDocumentWithEmployeeDTOAndBenefitDTO = List.of(DocumentWithEmployeeDTOAndBenefitDTO.of(documentEntryDTOS.get(0),employeeDTO, benefitDTO),
@@ -148,7 +148,7 @@ class DocumentServiceTest {
 
         Mockito.when(documentRepository.findById(anyLong())).thenReturn(Optional.of(documentEntryMapper.dtoToEntity(documentEntryDTO)));
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
-        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
+        Mockito.when(benefitClient.getBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
         DocumentWithEmployeeDTOAndBenefitDTO expectedDocumentWithEmployeeDTOAndBenefitDTO = DocumentWithEmployeeDTOAndBenefitDTO.of(documentEntryDTO, employeeDTO, benefitDTO);
         DocumentWithEmployeeDTOAndBenefitDTO actualDocumentWithEmployeeDTOAndBenefitDTO = documentService.viewDocumentEntry(1L);
@@ -185,7 +185,7 @@ class DocumentServiceTest {
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
         BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
-        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
+        Mockito.when(benefitClient.getBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
         Mockito.when(documentRepository.save(any())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         DocumentWithEmployeeDTOAndBenefitDTO actualDocumentWithEmployeeDTOAndBenefitDTOs = documentService.editDocumentEntry(createDocumentEntryDTO(1));

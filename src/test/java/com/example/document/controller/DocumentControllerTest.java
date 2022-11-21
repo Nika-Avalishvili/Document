@@ -79,7 +79,7 @@ class DocumentControllerTest {
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
         BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
-        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
+        Mockito.when(benefitClient.getBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
         Path path = Paths.get("src/test/resources/test_files/input_file.xlsx");
         String name = "input_file.xlsx";
@@ -125,7 +125,7 @@ class DocumentControllerTest {
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
         BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
-        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
+        Mockito.when(benefitClient.getBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
         List<DocumentEntryDTO> documentEntryDTOS = List.of(createDocumentEntryDTO(1));
         documentService.insertDocumentEntries(documentEntryDTOS);
@@ -156,7 +156,7 @@ class DocumentControllerTest {
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
         BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
-        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
+        Mockito.when(benefitClient.getBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
         List<DocumentEntryDTO> documentEntryDTOS = List.of(createDocumentEntryDTO(1), createDocumentEntryDTO(2));
         documentService.insertDocumentEntries(documentEntryDTOS);
@@ -200,7 +200,7 @@ class DocumentControllerTest {
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
         BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
-        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
+        Mockito.when(benefitClient.getBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
         String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.get("/document/viewById/{id}", firstId))
                 .andExpect(status().isOk())
@@ -255,7 +255,7 @@ class DocumentControllerTest {
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
         BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
-        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
+        Mockito.when(benefitClient.getBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
         List<DocumentEntryDTO> documentEntryDTOS = IntStream.range(0, 2).mapToObj(this::createDocumentEntryDTO).collect(Collectors.toList());
         documentService.insertDocumentEntries(documentEntryDTOS);
@@ -285,7 +285,7 @@ class DocumentControllerTest {
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
         BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
-        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
+        Mockito.when(benefitClient.getBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
         List<DocumentEntryDTO> documentEntryDTOS = IntStream.range(0, 2).mapToObj(this::createDocumentEntryDTO).collect(Collectors.toList());
         Long firstId = documentService.insertDocumentEntries(documentEntryDTOS).get(0).getId();
@@ -318,7 +318,7 @@ class DocumentControllerTest {
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
 
         BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
-        Mockito.when(benefitClient.findBenefitDtoById(anyLong())).thenReturn(benefitDTO);
+        Mockito.when(benefitClient.getBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
         List<DocumentEntryDTO> documentEntryDTOS = IntStream.range(0, 5).mapToObj(this::createDocumentEntryDTO).collect(Collectors.toList());
         documentService.insertDocumentEntries(documentEntryDTOS);

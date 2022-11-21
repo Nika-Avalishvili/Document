@@ -17,7 +17,7 @@ public class BenefitClient {
     private String benefitUrl;
 
 
-    public BenefitDTO findBenefitDtoById(Long id) {
+    public BenefitDTO getBenefitDtoById(Long id) {
 
         WebClient client = WebClient.create();
 
@@ -27,7 +27,7 @@ public class BenefitClient {
         try {
             return responseSpec.bodyToMono(BenefitDTO.class).block();
         } catch (WebClientResponseException.NotFound exception) {
-            throw new BenefitNotFoundException(exception.getMessage(), 404, exception.getStatusText(), exception.getHeaders(), exception.getResponseBodyAsByteArray(), StandardCharsets.UTF_8);
+            throw new BenefitNotFoundException(exception);
         }
     }
 }

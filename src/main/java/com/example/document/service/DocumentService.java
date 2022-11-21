@@ -48,7 +48,7 @@ public class DocumentService {
             mapOfEmployees.put(employeeId, employeeClient.getEmployeeById(employeeId));
 
             Long benefitId = (long) row.getCell(3).getNumericCellValue();
-            mapOfBenefits.put(benefitId, benefitClient.findBenefitDtoById(benefitId));
+            mapOfBenefits.put(benefitId, benefitClient.getBenefitDtoById(benefitId));
 
             BigDecimal amount = BigDecimal.valueOf(row.getCell(4).getNumericCellValue());
 
@@ -79,7 +79,7 @@ public class DocumentService {
             Long employeeId = documentEntryDTOS.get(i).getEmployeeId();
             Long benefitId = documentEntryDTOS.get(i).getBenefitId();
             mapOfEmployees.put(employeeId, employeeClient.getEmployeeById(employeeId));
-            mapOfBenefits.put(documentEntryDTOS.get(i).getBenefitId(), benefitClient.findBenefitDtoById(benefitId));
+            mapOfBenefits.put(documentEntryDTOS.get(i).getBenefitId(), benefitClient.getBenefitDtoById(benefitId));
         }
 
         List<DocumentEntry> savedDocumentEntries = documentRepository.saveAll(documentEntryMapper.dtoToEntity(documentEntryDTOS));
@@ -93,14 +93,14 @@ public class DocumentService {
     public List<DocumentWithEmployeeDTOAndBenefitDTO> getAllDocuments() {
         List<DocumentEntryDTO> allDocumentEntryDTOs = documentEntryMapper.entityToDto(documentRepository.findAll());
         return allDocumentEntryDTOs.stream()
-                .map(documentEntryDTO -> DocumentWithEmployeeDTOAndBenefitDTO.of(documentEntryDTO, employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId()), benefitClient.findBenefitDtoById(documentEntryDTO.getBenefitId()))).collect(Collectors.toList());
+                .map(documentEntryDTO -> DocumentWithEmployeeDTOAndBenefitDTO.of(documentEntryDTO, employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId()), benefitClient.getBenefitDtoById(documentEntryDTO.getBenefitId()))).collect(Collectors.toList());
     }
 
     public DocumentWithEmployeeDTOAndBenefitDTO viewDocumentEntry(Long id) {
         DocumentEntry documentEntry = documentRepository.findById(id).orElse(null);
         DocumentEntryDTO documentEntryDTO = documentEntryMapper.entityToDto(documentEntry);
         EmployeeDTO employeeById = employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId());
-        BenefitDTO benefitById = benefitClient.findBenefitDtoById(documentEntryDTO.getBenefitId());
+        BenefitDTO benefitById = benefitClient.getBenefitDtoById(documentEntryDTO.getBenefitId());
         return DocumentWithEmployeeDTOAndBenefitDTO.of(documentEntryDTO, employeeById, benefitById);
     }
 
@@ -109,7 +109,7 @@ public class DocumentService {
         List<DocumentEntryDTO> documentEntryDTOS = documentEntryMapper.entityToDto(documentEntry);
 
         return documentEntryDTOS.stream()
-                .map(documentEntryDTO -> DocumentWithEmployeeDTOAndBenefitDTO.of(documentEntryDTO, employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId()), benefitClient.findBenefitDtoById(documentEntryDTO.getBenefitId())))
+                .map(documentEntryDTO -> DocumentWithEmployeeDTOAndBenefitDTO.of(documentEntryDTO, employeeClient.getEmployeeById(documentEntryDTO.getEmployeeId()), benefitClient.getBenefitDtoById(documentEntryDTO.getBenefitId())))
                 .collect(Collectors.toList());
     }
 
@@ -118,7 +118,7 @@ public class DocumentService {
         DocumentEntry savedDocumentEntry = documentRepository.save(documentEntry);
         DocumentEntryDTO savedDocumentEntryDTO = documentEntryMapper.entityToDto(savedDocumentEntry);
         EmployeeDTO employeeById = employeeClient.getEmployeeById(savedDocumentEntryDTO.getEmployeeId());
-        BenefitDTO benefitById = benefitClient.findBenefitDtoById(savedDocumentEntryDTO.getBenefitId());
+        BenefitDTO benefitById = benefitClient.getBenefitDtoById(savedDocumentEntryDTO.getBenefitId());
         return DocumentWithEmployeeDTOAndBenefitDTO.of(savedDocumentEntryDTO, employeeById, benefitById);
     }
 
