@@ -1,6 +1,9 @@
 package com.example.document.service;
 
-import com.example.document.client.*;
+import com.example.document.client.BenefitClient;
+import com.example.document.client.BenefitDTO;
+import com.example.document.client.EmployeeClient;
+import com.example.document.client.EmployeeDTO;
 import com.example.document.model.DocumentEntry;
 import com.example.document.model.DocumentEntryDTO;
 import com.example.document.model.DocumentEntryMapper;
@@ -10,7 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -24,12 +29,14 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class DocumentService {
 
     private final DocumentEntryMapper documentEntryMapper;
     private final DocumentRepository documentRepository;
     private final EmployeeClient employeeClient;
     private final BenefitClient benefitClient;
+    private final StreamBridge streamBridge;
 
     public List<DocumentWithEmployeeDTOAndBenefitDTO> uploadExcelDocument(MultipartFile file) throws Exception {
         InputStream inputStream = file.getInputStream();
@@ -61,6 +68,12 @@ public class DocumentService {
                     .build();
             docEntryList.add(newDocumentEntry);
         }
+
+        //RabbitMQ implementation
+        for (int i = 0; i < docEntryList.size(); i++) {
+            streamBridge.send("document-out-0", docEntryList.get(i));
+        }
+
         documentRepository.saveAll(docEntryList);
         List<DocumentEntryDTO> documentEntryDTOS = documentEntryMapper.entityToDto(docEntryList);
 
@@ -80,6 +93,11 @@ public class DocumentService {
             Long benefitId = documentEntryDTOS.get(i).getBenefitId();
             mapOfEmployees.put(employeeId, employeeClient.getEmployeeById(employeeId));
             mapOfBenefits.put(documentEntryDTOS.get(i).getBenefitId(), benefitClient.getBenefitDtoById(benefitId));
+        }
+
+        //RabbitMQ implementation
+        for (int i = 0; i < documentEntryDTOS.size(); i++) {
+            streamBridge.send("document-out-0", documentEntryDTOS.get(i));
         }
 
         List<DocumentEntry> savedDocumentEntries = documentRepository.saveAll(documentEntryMapper.dtoToEntity(documentEntryDTOS));

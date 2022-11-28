@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
@@ -36,16 +37,18 @@ class DocumentServiceTest {
     DocumentRepository documentRepository;
     @Mock
     EmployeeClient employeeClient;
-
     @Mock
     BenefitClient benefitClient;
+
+    @Mock
+    StreamBridge streamBridge;
     DocumentEntryMapper documentEntryMapper;
     DocumentService documentService;
 
     @BeforeEach
     void setUp() {
         documentEntryMapper = new DocumentEntryMapper();
-        documentService = new DocumentService(documentEntryMapper, documentRepository, employeeClient, benefitClient);
+        documentService = new DocumentService(documentEntryMapper, documentRepository, employeeClient, benefitClient, streamBridge);
     }
 
     public DocumentEntryDTO createDocumentEntryDTO(int i) {
