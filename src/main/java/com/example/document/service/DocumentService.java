@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -69,15 +70,15 @@ public class DocumentService {
             docEntryList.add(newDocumentEntry);
         }
 
+        List<DocumentEntry> savedDocumentEntries = documentRepository.saveAll(docEntryList);
+        List<DocumentEntryDTO> savedDocumentEntryDTOS = documentEntryMapper.entityToDto(docEntryList);
+
         //RabbitMQ implementation
-        for (int i = 0; i < docEntryList.size(); i++) {
-            streamBridge.send("document-out-0", docEntryList.get(i));
-        }
+        IntStream.range(0,savedDocumentEntryDTOS.size()).forEach(i -> savedDocumentEntryDTOS.get(i).setId(savedDocumentEntries.get(i).getId()));
+        savedDocumentEntryDTOS.forEach(documentEntryDTO ->  streamBridge.send("document-out-0", documentEntryDTO));
 
-        documentRepository.saveAll(docEntryList);
-        List<DocumentEntryDTO> documentEntryDTOS = documentEntryMapper.entityToDto(docEntryList);
 
-        return documentEntryDTOS.stream()
+        return savedDocumentEntryDTOS.stream()
                 .map(documentEntryDTO -> DocumentWithEmployeeDTOAndBenefitDTO.of(documentEntryDTO, mapOfEmployees.get(documentEntryDTO.getEmployeeId()), mapOfBenefits.get(documentEntryDTO.getBenefitId())))
                 .collect(Collectors.toList());
     }
@@ -95,13 +96,13 @@ public class DocumentService {
             mapOfBenefits.put(documentEntryDTOS.get(i).getBenefitId(), benefitClient.getBenefitDtoById(benefitId));
         }
 
-        //RabbitMQ implementation
-        for (int i = 0; i < documentEntryDTOS.size(); i++) {
-            streamBridge.send("document-out-0", documentEntryDTOS.get(i));
-        }
-
         List<DocumentEntry> savedDocumentEntries = documentRepository.saveAll(documentEntryMapper.dtoToEntity(documentEntryDTOS));
         List<DocumentEntryDTO> savedDocumentEntryDTOs = documentEntryMapper.entityToDto(savedDocumentEntries);
+
+
+        //RabbitMQ implementation
+        IntStream.range(0,savedDocumentEntryDTOs.size()).forEach(i -> savedDocumentEntryDTOs.get(i).setId(savedDocumentEntries.get(i).getId()));
+        savedDocumentEntryDTOs.forEach(documentEntryDTO ->  streamBridge.send("document-out-0", documentEntryDTO));
 
         return savedDocumentEntryDTOs.stream()
                 .map(documentEntryDTO -> DocumentWithEmployeeDTOAndBenefitDTO.of(documentEntryDTO, mapOfEmployees.get(documentEntryDTO.getEmployeeId()), mapOfBenefits.get(documentEntryDTO.getBenefitId())))
