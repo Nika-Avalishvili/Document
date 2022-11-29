@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
@@ -36,16 +37,18 @@ class DocumentServiceTest {
     DocumentRepository documentRepository;
     @Mock
     EmployeeClient employeeClient;
-
     @Mock
     BenefitClient benefitClient;
+
+    @Mock
+    StreamBridge streamBridge;
     DocumentEntryMapper documentEntryMapper;
     DocumentService documentService;
 
     @BeforeEach
     void setUp() {
         documentEntryMapper = new DocumentEntryMapper();
-        documentService = new DocumentService(documentEntryMapper, documentRepository, employeeClient, benefitClient);
+        documentService = new DocumentService(documentEntryMapper, documentRepository, employeeClient, benefitClient, streamBridge);
     }
 
     public DocumentEntryDTO createDocumentEntryDTO(int i) {
@@ -60,24 +63,36 @@ class DocumentServiceTest {
 
     @Test
     void uploadExcelDocument() throws Exception {
+        System.out.println("========STEP 1==========");
         Path path = Paths.get("src/test/resources/test_files/input_file.xlsx");
+
+        System.out.println("========STEP 2==========");
         String name = "input_file.xlsx";
         String contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+        System.out.println("========STEP 3==========");
         MockMultipartFile file = new MockMultipartFile(
                 name,
                 name,
                 contentType,
                 readAllBytes(path));
 
+
+        System.out.println("========STEP 4==========");
         EmployeeDTO employeeDTO = new EmployeeDTO(1L, "Nika", "Avalishvili", "Department1", "Position1", "email1", true, true);
         BenefitDTO benefitDTO = new BenefitDTO(1L, "Salary", new BenefitTypeDTO(1L, "Accrual"), new CalculationMethodDTO(1L, "Net"));
         Mockito.when(employeeClient.getEmployeeById(anyLong())).thenReturn(employeeDTO);
         Mockito.when(benefitClient.getBenefitDtoById(anyLong())).thenReturn(benefitDTO);
 
+
+        System.out.println("========STEP 5==========");
         List<DocumentWithEmployeeDTOAndBenefitDTO> actualDocumentWithEmployeeDTOAndBenefitDTOS = documentService.uploadExcelDocument(file);
+        System.out.println("========STEP 5.5==========");
         Assertions.assertEquals(4, actualDocumentWithEmployeeDTOAndBenefitDTOS.size());
 
-        //      Manually Created Info from Excel File
+
+        System.out.println("========STEP 6==========");
+        //Manually Created Info from Excel File
         LocalDate docDate = LocalDate.of(2022, 11, 11);
         LocalDate effectiveDate = LocalDate.of(2022, 12, 11);
         List<DocumentWithEmployeeDTOAndBenefitDTO> manuallyCreatedDocEntries =
@@ -88,10 +103,13 @@ class DocumentServiceTest {
                         new DocumentWithEmployeeDTOAndBenefitDTO(1L, docDate, effectiveDate, employeeDTO, benefitDTO, BigDecimal.valueOf(400.0))
                 );
 
+        System.out.println("========STEP 8==========");
         assertThat(actualDocumentWithEmployeeDTOAndBenefitDTOS)
                 .usingRecursiveComparison()
                 .ignoringFields("value.id", "id")
                 .isEqualTo(manuallyCreatedDocEntries);
+
+        System.out.println("========STEP 8==========");
     }
 
     @Test
